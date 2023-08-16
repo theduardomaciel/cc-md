@@ -11,8 +11,8 @@ int main()
     struct timespec start_time = start_clock();
 
     printf("🔢 >> Insira um número inteiro para decompor em seus fatores primos: ");
-    unsigned long input;
-    int scan_return = scanf("%lu", &input);
+    int input;
+    int scan_return = scanf("%d", &input);
 
     if (scan_return != 1)
     {
@@ -26,18 +26,19 @@ int main()
         return 0;
     }
 
-    printf("⏳ Decompondo %lu em seus fatores primos...\n", input);
+    printf("⏳ Decompondo %d em seus fatores primos...\n", input);
 
     printf("Estes são os fatores primos extraídos no número inserido: ⬇️\n");
 
-    decompose(input);
-    /* unsigned long decomposed[input];
-    int amount = decompose(input, decomposed);
+    int decomposed[input];
+    int expoents[input];
 
-    for (unsigned long i = 0; i < amount; i++)
+    int amount = decompose(input, decomposed, expoents);
+
+    for (int i = 0; i < amount; i++)
     {
-        printf("- %lu -\n", decomposed[i]);
-    } */
+        printf("- %d^%d -\n", decomposed[i], expoents[i]);
+    }
 
     end_clock(start_time);
 
