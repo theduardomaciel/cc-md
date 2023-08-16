@@ -2,8 +2,8 @@
 #include <math.h>
 #include <time.h>
 
-#include "../modules/timer.h"
-#include "../modules/prime.h"
+#include "./modules/timer.h"
+#include "./modules/prime.h"
 
 // 2. Escrever um programa para listar números primos sequencialmente. Você deve otimizar o programa para que ele liste o maior número possivel de primos em 60 segundos.
 

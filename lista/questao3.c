@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "../modules/prime.h"
-#include "../modules/timer.h"
+#include "./modules/prime.h"
+#include "./modules/timer.h"
 
 // 3. Escrever um programa para decompor um determinado número inteiro em seus fatores primos.
 

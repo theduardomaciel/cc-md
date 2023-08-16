@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "../modules/timer.h"
-#include "../modules/prime.h"
+#include "./modules/timer.h"
+#include "./modules/prime.h"
 
 // 1. Escrever um programa que determina se um dado número inteiro é primo ou não.
 
