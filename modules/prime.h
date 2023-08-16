@@ -43,13 +43,12 @@ void decompose(unsigned int n)
             printf("%u", m);
             if (i != 1)
             {
-                printf("^%u ", i);
+                printf("^%u", i);
             }
 
             if (n != 1)
             {
-                putchar('*');
-                putchar(' ');
+                printf(" * ");
             }
         }
 
