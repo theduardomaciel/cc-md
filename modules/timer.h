@@ -29,8 +29,20 @@ void end_clock(struct timespec start)
     double time_spent_in_sec = (end.tv_sec - start.tv_sec) +
                                (end.tv_nsec - start.tv_nsec) / BILLION;
 
-    printf("______________________________________________________________________\n");
-    printf("Tempo de execução: %lfms\n", time_spent_in_sec / 1000);
+    printf("\n______________________________________________________________________\n");
+    printf("Tempo de execução: %lfs\n", time_spent_in_sec);
+}
+
+double get_time_in_seconds(struct timespec time)
+{
+    struct timespec end;
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    // time_spent = end - start
+    double time_spent_in_sec = (end.tv_sec - time.tv_sec) +
+                               (end.tv_nsec - time.tv_nsec) / BILLION;
+
+    return time_spent_in_sec;
 }
 
 /*
