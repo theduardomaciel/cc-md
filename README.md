@@ -30,3 +30,13 @@ Repositório contendo todos os arquivos fonte em C desenvolvidos durante a maté
 ##### Provar primalidade
 -   [Artigo (em inglês) mostrando como encontrar primos e provar que o são](https://t5k.org/prove/prove2_3.html)
 -   [Artigo (em inglês) sobre a prova de primalidade](https://en.wikipedia.org/wiki/Primality_test)
+
+#### Combinação Linear
+-   [Resposta acerca de como realizar uma combinação linear](https://math.stackexchange.com/questions/1258117/coefficients-of-a-linear-combination)
+-   [Algoritmo para encontrar os coeficientes de um MDC como combinação linear](https://math.stackexchange.com/questions/981773/algorithm-to-find-the-coefficient-of-gcd-linear-combination)
+-   [Calculadora de MDC como combinação linear](https://mathcenter.oxford.emory.edu/site/math125/toolGcdAsLinearCombination/index.php)
+-   [Competição para encontrar os coeficientes de um MMC como combinação linear](https://www.codewars.com/kata/63304cd2c68f640016b5d162)
+-   [Artigo explicando como realizar o Algoritmo de Euclides extendido](https://www.geeksforgeeks.org/euclidean-algorithms-basic-and-extended/)
+
+#### Inversos Modulares
+-   [Artigo explicando o que são e como calcular os inversos modulares](https://www.khanacademy.org/computing/computer-science/cryptography/modarithmetic/a/modular-inverses)

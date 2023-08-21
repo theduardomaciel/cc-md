@@ -18,18 +18,6 @@
     - R: o mod/resto da divisão inteira
 */
 
-int mdc(int A, int D)
-{
-    do
-    {
-        int r = A % D;
-        A = D;
-        D = r;
-    } while (A % D != 0);
-
-    return D;
-}
-
 int main()
 {
     struct timespec start_time = start_clock();
@@ -45,7 +33,7 @@ int main()
         return 0;
     }
 
-    printf("mdc(%d, %d) = %d\n", input1, input2, mdc(input1, input2));
+    printf("mdc(%d, %d) = %d\n", input1, input2, euclides(input1, input2));
 
     end_clock(start_time);
 

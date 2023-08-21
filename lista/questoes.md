@@ -1,4 +1,4 @@
-## Questões da Lista da Aula Prática de 2022
+## Questões da Lista da Aula Prática
 
 1. Escrever um programa que determina se um dado número inteiro é primo ou não.
 

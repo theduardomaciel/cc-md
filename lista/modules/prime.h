@@ -88,15 +88,102 @@ int decompose(int number, int array[], int expoents_array[])
     return total; // Retorna o total de fatores primos encontrados
 }
 
-int frequency_count(int arr[], int num, int size)
+int euclides(int A, int D)
 {
-    int count = 0;
-    for (int i = 0; i < size; i++)
+    do
     {
-        if (num == arr[i])
-        {
-            count++;
-        }
-    }
-    return count;
+        int r = A % D;
+        A = D;
+        D = r;
+    } while (A % D != 0);
+
+    return D;
 }
+
+int extended_euclides(int A, int D, int* s, int* t)
+{
+    //printf("s atual: %d e t atual: %d\n", *s, *t);
+
+    // Caso base
+    if (A == 0)
+    {
+        *s = 0;
+        *t = 1;
+        return D;
+    }
+
+    int s1 = 0, t1 = 0; // Utilizamos as variáveis para armazenar os resultados das chamadas recursivas
+    int mdc = extended_euclides(D % A, A, &s1, &t1);
+
+    // Atualizamos s e t utilizando os resultados das chamadas recursivas
+    *s = t1 - (D /A ) * s1;
+    *t = s1;
+
+    //printf("s novo: %d e t novo: %d\n", t1 - (D /A ) * s1, s1);
+
+    return mdc;
+}
+
+/* 
+    // C program to demonstrate working of extended Euclidean Algorithm
+    #include <stdio.h>
+
+    // C function for extended Euclidean Algorithm
+    int gcdExtended(int a, int b, int *x, int *y)
+    {
+        // Base Case
+        if (a == 0)
+        {
+            *x = 0;
+            *y = 1;
+            return b;
+        }
+
+        int s1, t1; // To store results of recursive call
+        int gcd = gcdExtended(b%a, a, &s1, &t1);
+
+        // Update x and y using results of recursive
+        // call
+        *x = t1 - (b/a) * s1;
+        *y = s1;
+
+        return gcd;
+    }
+
+    // Driver Program
+    int main()
+    {
+        int x, y;
+        int a = 35, b = 15;
+        int g = gcdExtended(a, b, &x, &y);
+        printf("gcd(%d, %d) = %d", a, b, g);
+        return 0;
+    }
+*/
+
+/* 
+    Time Complexity: O(log N)
+    Auxiliary Space: O(log N)
+
+    Como o Algoritmo de Euclides extendido funciona?
+    ------------------------------------------------
+
+    As seen above, x and y are results for inputs a and b,
+
+    a.x + b.y = mdc                      — (1)  
+
+    And s1 and t1 are results for inputs b % a and a
+
+        (b % a).s1 + a.t1 = mdc   
+
+    When we put b % a = (b – (⌊b/a⌋).a) in above, we get following: (Note that ⌊b/a⌋ is floor(b/a)
+
+        (b – (⌊b/a⌋).a).s1 + a.t1  = mdc
+
+    Above equation can also be written as below
+    b.s1 + a.(t1 – (⌊b/a⌋).s1) = mdc      — (2)
+
+    After comparing coefficients of ‘a’ and ‘b’ in (1) and (2), we get following, 
+    x = t1 – ⌊b/a⌋ * s1
+    y = s1
+*/
