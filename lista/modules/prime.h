@@ -88,6 +88,10 @@ int decompose(int number, int array[], int expoents_array[])
     return total; // Retorna o total de fatores primos encontrados
 }
 
+// MDC(A, 0) = A
+// MDC(0, D) = D
+// Se A = D⋅ Q + R e B ≠ 0, então MDC(A,B) = MDC(B,R) sendo Q um inteiro, e R um inteiro entre 0 e B - 1
+
 int euclides(int A, int D)
 {
     do
@@ -100,90 +104,90 @@ int euclides(int A, int D)
     return D;
 }
 
-int extended_euclides(int A, int D, int* s, int* t)
-{
-    //printf("s atual: %d e t atual: %d\n", *s, *t);
+// gcd = mmc em inglês
 
-    // Caso base
-    if (A == 0)
-    {
-        *s = 0;
-        *t = 1;
-        return D;
-    }
+/*
+    a.s + b.t = mdc(a, b)
+    mdc(a, b) = mdc(b % a, a)
+    mdc(b % a, a) = (b % a).s1 + a.t1
+    a.s + b.t = (b%a).s1 + a.t1
+    a.s + b.t = (b – [b/a] * a).s1 + a.t1
+    a.s + b.t = a(t1 – [b/a] * s1) + b.s1
 
-    int s1 = 0, t1 = 0; // Utilizamos as variáveis para armazenar os resultados das chamadas recursivas
-    int mdc = extended_euclides(D % A, A, &s1, &t1);
-
-    // Atualizamos s e t utilizando os resultados das chamadas recursivas
-    *s = t1 - (D /A ) * s1;
-    *t = s1;
-
-    //printf("s novo: %d e t novo: %d\n", t1 - (D /A ) * s1, s1);
-
-    return mdc;
-}
-
-/* 
-    // C program to demonstrate working of extended Euclidean Algorithm
-    #include <stdio.h>
-
-    // C function for extended Euclidean Algorithm
-    int gcdExtended(int a, int b, int *x, int *y)
-    {
-        // Base Case
-        if (a == 0)
-        {
-            *x = 0;
-            *y = 1;
-            return b;
-        }
-
-        int s1, t1; // To store results of recursive call
-        int gcd = gcdExtended(b%a, a, &s1, &t1);
-
-        // Update x and y using results of recursive
-        // call
-        *x = t1 - (b/a) * s1;
-        *y = s1;
-
-        return gcd;
-    }
-
-    // Driver Program
-    int main()
-    {
-        int x, y;
-        int a = 35, b = 15;
-        int g = gcdExtended(a, b, &x, &y);
-        printf("gcd(%d, %d) = %d", a, b, g);
-        return 0;
-    }
+    Comparing LHS and RHS,
+    s = t1 – ⌊b/a⌋ * s1
+    t = s1
 */
 
-/* 
+int extended_euclides(int A, int D, int *s, int *t)
+{
+    // Inicializamos os coeficientes de Bézout
+    int s0 = 1, s1 = 0, t0 = 0, t1 = 1;
+    // Inicializamos as variáveis
+    int q, r, m, n;
+
+    while (A > 0)
+    {
+        // A cada loop, calculamos o quociente (q) e o resto (r) da divisão de D por A
+        q = D / A;
+        r = D % A;
+
+        // Armazenamos temporariamente os coeficientes calculados nessa iteração
+        m = s0 - q * s1;
+        n = t0 - q * t1;
+
+        // Atualizamos as variáveis para a próxima iteração
+        D = A;
+        A = r;
+        s0 = s1;
+        t0 = t1;
+        s1 = m;
+        t1 = n;
+    }
+
+    // Após o loop, os coeficientes finais são armazenados em *s e *t
+    *s = s0;
+    *t = t0;
+
+    return D; // Retornamos o MDC
+}
+
+/*
     Time Complexity: O(log N)
     Auxiliary Space: O(log N)
 
     Como o Algoritmo de Euclides extendido funciona?
     ------------------------------------------------
 
-    As seen above, x and y are results for inputs a and b,
+    Como visto, s e t são resultados para os inputs a e b,
 
-    a.x + b.y = mdc                      — (1)  
+    a.s + b.t = mdc                      — (1)
 
-    And s1 and t1 are results for inputs b % a and a
+    E s1 e t1 são resultados para os inputs b % a e a
 
-        (b % a).s1 + a.t1 = mdc   
+        (b % a).s1 + a.t1 = mdc
 
-    When we put b % a = (b – (⌊b/a⌋).a) in above, we get following: (Note that ⌊b/a⌋ is floor(b/a)
+    Quando colocamos b % a = (b – (⌊b/a⌋).a) acima, obtemos o seguinte: (⌊b/a⌋ é o floor(b/a))
 
         (b – (⌊b/a⌋).a).s1 + a.t1  = mdc
 
-    Above equation can also be written as below
+    A equação acima também pode ser escrita da seguinte maneira:
     b.s1 + a.(t1 – (⌊b/a⌋).s1) = mdc      — (2)
 
-    After comparing coefficients of ‘a’ and ‘b’ in (1) and (2), we get following, 
-    x = t1 – ⌊b/a⌋ * s1
-    y = s1
+    // Depois de comparar os coeficientes de 'a' e 'b' em (1) e (2), obtemos o seguinte:
+    s = t1 – ⌊b/a⌋ * s1
+    t = s1
 */
+
+// Função para encontrar o inverso modular de a
+int mod_inverse(int A, int M)
+{
+    int s, t;
+    int mdc = extended_euclides(A, M, &s, &t);
+    if (mdc != 1)
+        return 0;
+    else {
+        // m is added to handle negative s
+        return (s % M + M) % M;
+    }
+}

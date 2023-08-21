@@ -12,7 +12,7 @@ int main()
 
     int A, D;
 
-    printf("🔢 >> Insira dois números inteiros para encontra os coeficientes s e t da combinação linear de seu MDC: ");
+    printf("🔢 >> Insira dois números inteiros para encontrar os coeficientes s e t da combinação linear de seu MDC: ");
     int scan_return = scanf("%d %d", &A, &D);
 
     if (scan_return != 2)
