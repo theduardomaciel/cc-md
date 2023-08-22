@@ -3,13 +3,17 @@
 
 // Conceito: um inteiro "unsigned" em C abre mão dos números negativos para duplicar a capacidade de armazenamento de números positivos
 
-bool isPrime(unsigned long number)
+bool isPrime(int number)
 {
-    // Percorremos todos os inteiros i, variando de 2 a n - 1, e então testamos se i é divisor de n
-    // No entanto, de acordo com a Teoria do Número Primo, temos que "o numero de primos n ̃ao excedentes a x é aproximadamente x / ln(x)"
-    for (unsigned long i = 2; i < (number / log(number)); i++)
+    if (number < 1)
+        return false;
+    if (number == 2)
+        return true;
+
+    // Percorremos todos os inteiros i, variando de 3 à raiz quadrada de number, e então testamos se i é divisor de n
+    for (int i = 3; i < sqrt(number); i += 2)
     {
-        if (number % i == 0)
+        if (!(number % i))
         {
             // se i é divisor, n é composto
             return false;
