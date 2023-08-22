@@ -42,6 +42,4 @@ int main()
     end_clock(start_time);
 
     return 0;
-
-    return 0;
 }

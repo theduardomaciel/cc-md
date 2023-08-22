@@ -146,8 +146,8 @@ int extended_euclides(int A, int D, int *s, int *t)
     }
 
     // Após o loop, os coeficientes finais são armazenados em *s e *t
-    *s = s0;
-    *t = t0;
+    *s = t0;
+    *t = s0;
 
     return D; // Retornamos o MDC
 }
@@ -186,8 +186,13 @@ int mod_inverse(int A, int M)
     int mdc = extended_euclides(A, M, &s, &t);
     if (mdc != 1)
         return 0;
-    else {
-        // m is added to handle negative s
+    else
+    {
+        // O coeficiente de A em uma combinação linear entre A e M que seja igual a 1 é um inverso de a módulo m.
+        // Logo, s, o coeficiente de A, é o inverso de A módulo M.
+        // Além disso, todo número congruente à: "s mod M" também é um inverso de "A mod M"
+
+        // Somamos M para lidar com caso do coeficiente s ser negativo
         return (s % M + M) % M;
     }
 }
