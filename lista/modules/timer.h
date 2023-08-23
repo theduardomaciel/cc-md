@@ -26,21 +26,21 @@ void end_clock(struct timespec start)
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 
     // time_spent = end - start
-    int time_spent_in_msec = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000000;
+    double time_in_seconds = ((double)end.tv_sec + 1.0e-9 * end.tv_nsec) - ((double)start.tv_sec + 1.0e-9 * start.tv_nsec);
 
     printf("\n______________________________________________________________________\n");
-    printf("Tempo de execução: %dms\n", time_spent_in_msec);
+    printf("Tempo de execução: %.2lfs\n", time_in_seconds);
 }
 
-int get_time_in_seconds(struct timespec time)
+double get_time_in_seconds(struct timespec time)
 {
     struct timespec end;
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 
-    // time_spent = end - start
-    int time_spent_in_sec = (end.tv_sec - time.tv_sec) * 1000000 + (end.tv_nsec - time.tv_nsec) / 100000000;
+    // time_spent = end - time
+    double time_in_seconds = ((double)end.tv_sec + 1.0e-9 * end.tv_nsec) - ((double)time.tv_sec + 1.0e-9 * time.tv_nsec);
 
-    return time_spent_in_sec;
+    return time_in_seconds;
 }
 
 /*

@@ -3,7 +3,7 @@
 
 // Conceito: um inteiro "unsigned" em C abre mão dos números negativos para duplicar a capacidade de armazenamento de números positivos
 
-bool isPrime(int number)
+bool isPrime(unsigned long long number)
 {
     if (number < 1)
         return false;
