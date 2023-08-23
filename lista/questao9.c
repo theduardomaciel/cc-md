@@ -4,48 +4,13 @@
 
 #include "./modules/timer.h"
 #include "./modules/prime.h"
+#include "./modules/input.h"
 
 // 9. Escrever um programa para encontrar a solução única de três congruências usando o Teorema Chinês do Resto.
 // (Lembre-se de verificar se os módulos são co-primos).
 
-int request_input(int amount, int *array_b, int *array_m)
+int theorem(int array_size, int array_b[], int array_m[])
 {
-    for (int i = 0; i < amount; i++)
-    {
-        printf("✍️ >> Congruência %d: ", i + 1);
-
-        int b, m;
-        int scan_return = scanf("%d %d", &b, &m);
-
-        if (scan_return != 2)
-        {
-            printf("✖️ O input inserido não satisfaz o padrão: b m\n");
-            break;
-            return 0;
-        }
-
-        array_b[i] = b;
-        array_m[i] = m;
-    }
-
-    return 1;
-}
-
-int theorem(int array_size)
-{
-    // Alocamos espaço na memória dos b e m que iremos calcular
-    int array_b[array_size];
-    int array_m[array_size];
-    // memset(array_m, 1, array_size);
-
-    // Requerimos o input do usuário para cada uma das congruências
-    int success = request_input(array_size, array_b, array_m);
-
-    if (!success)
-    {
-        return 0;
-    }
-
     // Verificamos se todos os valores m são coprimos (primos entre si, ou seja, o mdc entre eles resulta em 1)
     // Caso não sejam, não é possível encontrar uma solução
     for (int i = 0; i < array_size - 1; i++)
@@ -62,22 +27,6 @@ int theorem(int array_size)
     // memset(array_M, 1, array_size);
     int array_M1[array_size];
     int array_M1inverse[array_size];
-
-    /* for (int i = 0; i < array_size; i++)
-    {
-        printf("array_M[%d]: %d\n", i, array_M[i]);
-        for (int mIteration = 0; mIteration < array_size; mIteration++)
-        {
-            if (array_m[mIteration] == array_m[i])
-            {
-                continue;
-            }
-            else
-            {
-                array_M[i] *= array_m[mIteration];
-            }
-        }
-    } */
 
     // Calculamos os n elementos M
     // O valor de M equivale à multiplicação dos m dos outros índices (i)
@@ -97,7 +46,6 @@ int theorem(int array_size)
     // Calculamos os n elementos M1
     for (int i = 0; i < array_size; i++)
     {
-        // printf("array_M[%d]: %d e array_m[%d]: %d", i, array_M[i], i, array_m[i]);
         array_M1[i] = array_M[i] % array_m[i];
     }
 
@@ -125,9 +73,22 @@ int main()
 {
     struct timespec start_time = start_clock();
 
-    printf("🔢 >> Insira 3 vezes (uma por linha), dois inteiros (b e m) para encontrar a solução de três congruências do tipo x ≅ b mod m:\n");
+    printf("🔢 >> Insira 3 vezes (uma por linha), dois inteiros (b e m) para encontrar a solução de 3 congruências do tipo x ≅ b mod m:\n");
 
-    int result = theorem(3);
+    // Alocamos espaço na memória dos b e m que iremos calcular
+    int array_b[3];
+    int array_m[3];
+    // memset(array_m, 1, array_size);
+
+    // Requerimos o input do usuário para cada uma das congruências
+    int success = request_input(3, array_b, array_m);
+
+    if (!success)
+    {
+        return 0;
+    }
+
+    int result = theorem(3, array_b, array_m);
 
     if (result == 0)
     {
@@ -135,7 +96,7 @@ int main()
     }
     else
     {
-        printf("✅ A solução das congruências lineares informadas é: %d\n", result);
+        printf("✅ A solução das 3 congruências lineares informadas é: %d\n", result);
     }
 
     end_clock(start_time);

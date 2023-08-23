@@ -4,7 +4,7 @@ int request_input(int amount, int *array_b, int *array_m)
 {
     for (int i = 0; i < amount; i++)
     {
-        printf("✍️ >> Congruência %d: ", i + 1);
+        printf("✍️ >> Congruência %d de %d: ", i + 1, amount);
 
         int b, m;
         int scan_return = scanf("%d %d", &b, &m);
