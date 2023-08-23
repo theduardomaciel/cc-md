@@ -12,7 +12,7 @@ int getBiggestPrime()
     struct timespec begin = start_clock();
 
     int currentNumber = 2;
-    // int primesCount = 1;
+    int primesCount = 1;
 
     // Como 2 é o único número par primo, imprimimos ele individualmente
     printf("2\n");
@@ -21,9 +21,9 @@ int getBiggestPrime()
     {
         if (isPrime(currentNumber))
         {
-            // printf("%d. %d\n", primesCount, lastNumber);
-            printf("%d\n", currentNumber);
-            //++primesCount;
+            printf("%d. %d\n", primesCount, currentNumber);
+            //printf("%d\n", currentNumber);
+            ++primesCount;
         }
         currentNumber += 2;
     }

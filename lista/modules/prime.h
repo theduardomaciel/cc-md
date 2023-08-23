@@ -103,7 +103,8 @@ int euclides(int A, int D)
         int r = A % D;
         A = D;
         D = r;
-    } while (A % D != 0);
+    } while (A % (int) fmax(1, D) != 0);
+    // Utilizamos a função fmax para garantir que não ocorra uma divisão por 0
 
     return D;
 }

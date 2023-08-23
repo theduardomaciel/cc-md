@@ -6,8 +6,7 @@
 #include "./modules/prime.h"
 #include "./modules/input.h"
 
-// 9. Escrever um programa para encontrar a solução única de três congruências usando o Teorema Chinês do Resto.
-// (Lembre-se de verificar se os módulos são co-primos).
+// 10. Generalize o programa da questão anterior para funcionar com n congruências ao invés de somente 3, onde n será dado pelo usuário.
 
 int main()
 {
@@ -16,9 +15,9 @@ int main()
     int array_size = 0;
     int scan_return = scanf("%d", &array_size);
 
-    if (scan_return != 1)
+    if (scan_return != 1 || array_size == 0)
     {
-        printf("✖️ O input inserido não satisfaz o padrão: [quantidade de congruências]\n");
+        printf("✖️ O input inserido não satisfaz o padrão: [quantidade de congruências diferente de 0]\n");
         return 0;
     }
 
