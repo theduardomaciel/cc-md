@@ -20,8 +20,6 @@
 
 int main()
 {
-    struct timespec start_time = start_clock();
-
     int input1, input2;
 
     printf("🔢 >> Insira dois números inteiros para determinar seus MDC: ");
@@ -32,6 +30,8 @@ int main()
         printf("❌ Os caracteres digitados formam uma entrada inválida!\n");
         return 0;
     }
+
+    struct timespec start_time = start_clock();
 
     printf("mdc(%d, %d) = %d\n", input1, input2, euclides(input1, input2));
 

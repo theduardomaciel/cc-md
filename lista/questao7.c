@@ -15,8 +15,6 @@
 
 int main()
 {
-    struct timespec start_time = start_clock();
-
     int A, B;
 
     printf("🔢 >> Insira dois números inteiros para encontrar o inverso de a mod b: ");
@@ -27,6 +25,8 @@ int main()
         printf("❌ Os caracteres digitados formam uma entrada inválida!\n");
         return 0;
     }
+
+    struct timespec start_time = start_clock();
 
     int inverse = mod_inverse(A, B);
 

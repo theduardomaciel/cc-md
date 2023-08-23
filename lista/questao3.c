@@ -8,7 +8,6 @@
 
 int main()
 {
-    struct timespec start_time = start_clock();
 
     printf("🔢 >> Insira um número inteiro para decompor em seus fatores primos: ");
     int input;
@@ -27,6 +26,7 @@ int main()
     }
 
     printf("⏳ Decompondo %d em seus fatores primos...\n", input);
+    struct timespec start_time = start_clock();
 
     printf("Estes são os fatores primos extraídos no número inserido: ⬇️\n");
 

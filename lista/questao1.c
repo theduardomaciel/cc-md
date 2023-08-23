@@ -8,8 +8,6 @@
 
 int main()
 {
-    struct timespec start_time = start_clock();
-
     unsigned long long input;
 
     printf("🔢 >> Insira um número inteiro para verificar se é primo: ");
@@ -22,6 +20,8 @@ int main()
     }
 
     printf("⏳ Verificando se %llu é um número primo...\n", input);
+    struct timespec start_time = start_clock();
+
     bool input_isPrime = isPrime(input);
 
     if (input_isPrime)

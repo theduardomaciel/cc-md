@@ -45,7 +45,6 @@ int algorithm(bool isMin, int length, int decomposed[], int decomposed_exponents
 
 int main()
 {
-    struct timespec start_time = start_clock();
 
     int input1, input2;
 
@@ -58,6 +57,7 @@ int main()
         return 0;
     }
 
+    struct timespec start_time = start_clock();
     printf("Estes são os MDC e MMC dos dois números informados: ⬇️\n");
 
     int decomposed1[10000] = {0};

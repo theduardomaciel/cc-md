@@ -8,8 +8,6 @@
 
 int main()
 {
-    struct timespec start_time = start_clock();
-
     int A, D;
 
     printf("🔢 >> Insira dois números inteiros para encontrar os coeficientes s e t da combinação linear de seu MDC: ");
@@ -20,6 +18,8 @@ int main()
         printf("❌ Os caracteres digitados formam uma entrada inválida!\n");
         return 0;
     }
+
+    struct timespec start_time = start_clock();
 
     int s_value = 0, t_value = 0;
     int mdc = extended_euclides(A, D, &s_value, &t_value);

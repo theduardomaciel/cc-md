@@ -200,3 +200,63 @@ int mod_inverse(int A, int M)
         return (s % M + M) % M;
     }
 }
+
+int chinese_theorem(int array_size, int array_b[], int array_m[])
+{
+    // Verificamos se todos os valores m são coprimos (primos entre si, ou seja, o mdc entre eles resulta em 1)
+    // Caso não sejam, não é possível encontrar uma solução
+    for (int i = 0; i < array_size - 1; i++)
+    {
+        if (euclides(array_m[i], array_m[i + 1]) != 1)
+        {
+            break;
+            return 0;
+        }
+    }
+
+    // Alocamos espaço na memória dos M, M1 e M1inverse que iremos calcular
+    int array_M[array_size];
+    // memset(array_M, 1, array_size);
+    int array_M1[array_size];
+    int array_M1inverse[array_size];
+
+    // Calculamos os n elementos M
+    // O valor de M equivale à multiplicação dos m dos outros índices (i)
+    // Exemplo: se m1 = 3, m2 = 7 e m3 = 10, então M1 = 7 * 10 = 70, M2 = 3 * 10 = 30 e M3 = 3 * 7 = 21
+    int generalM = 1;
+    for (int i = 0; i < array_size; i++)
+    {
+        generalM *= array_m[i];
+    }
+
+    for (int i = 0; i < array_size; i++)
+    {
+        array_M[i] = generalM / array_m[i];
+        // printf("array_M[%d]: %d\n", i, array_M[i]);
+    }
+
+    // Calculamos os n elementos M1
+    for (int i = 0; i < array_size; i++)
+    {
+        array_M1[i] = array_M[i] % array_m[i];
+    }
+
+    // Calculamos os n elementos M1inverse
+    for (int i = 0; i < array_size; i++)
+    {
+        array_M1inverse[i] = mod_inverse(array_M1[i], array_m[i]);
+    }
+
+    // Depois de calcularmos todos os M, M1 e M1inverse, podemos realizar o cálculo final
+    int total_multiplication = 0;
+    int total_divisor = 1;
+
+    for (int i = 0; i < array_size; i++)
+    {
+        total_multiplication += array_b[i] * array_M[i] * array_M1inverse[i];
+        total_divisor *= array_m[i];
+    }
+
+    // Retornamos o "x" (solução) comum entre todas as congruências
+    return total_multiplication % total_divisor;
+}

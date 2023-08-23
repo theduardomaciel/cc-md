@@ -1,5 +1,5 @@
-#define BILLION 1000000000.0
-// caso o arquivo esteja na extensão .c, adicionar isso ao topo: #define _POSIX_C_SOURCE 199309L para que o CLOCK_REALTIME seja definido
+// #define BILLION 1000000000.0
+//  caso o arquivo esteja na extensão .c, adicionar isso ao topo: #define _POSIX_C_SOURCE 199309L para que o CLOCK_REALTIME seja definido
 
 #include <time.h>
 #include <stdio.h>
@@ -16,31 +16,29 @@
 struct timespec start_clock()
 {
     struct timespec start;
-    clock_gettime(CLOCK_REALTIME, &start);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
     return start;
 }
 
 void end_clock(struct timespec start)
 {
     struct timespec end;
-    clock_gettime(CLOCK_REALTIME, &end);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 
     // time_spent = end - start
-    double time_spent_in_sec = (end.tv_sec - start.tv_sec) +
-                               (end.tv_nsec - start.tv_nsec) / BILLION;
+    int time_spent_in_msec = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000000;
 
     printf("\n______________________________________________________________________\n");
-    printf("Tempo de execução: %lfs\n", time_spent_in_sec);
+    printf("Tempo de execução: %dms\n", time_spent_in_msec);
 }
 
-double get_time_in_seconds(struct timespec time)
+int get_time_in_seconds(struct timespec time)
 {
     struct timespec end;
-    clock_gettime(CLOCK_REALTIME, &end);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 
     // time_spent = end - start
-    double time_spent_in_sec = (end.tv_sec - time.tv_sec) +
-                               (end.tv_nsec - time.tv_nsec) / BILLION;
+    int time_spent_in_sec = (end.tv_sec - time.tv_sec) * 1000000 + (end.tv_nsec - time.tv_nsec) / 100000000;
 
     return time_spent_in_sec;
 }

@@ -29,8 +29,6 @@ int check_solutions_amount(int a, int b, int m)
 
 int main()
 {
-    struct timespec start_time = start_clock();
-
     int a, b, m;
 
     printf("🔢 >> Insira três inteiros (a, b e m) para encontrar a solução de uma congruência do tipo ax ≅ b mod m: ");
@@ -41,6 +39,8 @@ int main()
         printf("❌ O input inserido não satisfaz o padrão: a b m\n");
         return 0;
     }
+
+    struct timespec start_time = start_clock();
 
     // a.x ≅ b mod m
     // Para encontrar uma solução para essa congruência, primeiro precisamos antes encontrar a solução para a congruência: a.x ≅ 1 mod m, e, com isto, o inverso de a mod m

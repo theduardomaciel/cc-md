@@ -71,8 +71,6 @@ int theorem(int array_size, int array_b[], int array_m[])
 
 int main()
 {
-    struct timespec start_time = start_clock();
-
     printf("🔢 >> Insira 3 vezes (uma por linha), dois inteiros (b e m) para encontrar a solução de 3 congruências do tipo x ≅ b mod m:\n");
 
     // Alocamos espaço na memória dos b e m que iremos calcular
@@ -88,7 +86,9 @@ int main()
         return 0;
     }
 
-    int result = theorem(3, array_b, array_m);
+    struct timespec start_time = start_clock();
+
+    int result = chinese_theorem(3, array_b, array_m);
 
     if (result == 0)
     {
