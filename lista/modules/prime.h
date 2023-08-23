@@ -37,10 +37,10 @@ int decompose(int number, int array[], int expoents_array[])
 
     /*
         -> Lidando com o fator primo 2:
-        Esse loop está focado em lidar especificamente com o fator primo 2.
-        Ele é uma otimização para lidar com divisões repetidas por 2, que é o único número par que é primo.
-        Dividir o número por 2 repetidamente até que o número não seja mais divisível por 2 (ou seja, quando o resto da divisão não é mais zero) permite identificar o número de vezes que o fator 2 está presente na decomposição em fatores primos do número.
-        Isso permite que o algoritmo otimize a decomposição do fator 2 antes de continuar com outros fatores primos ímpares.
+            Esse loop está focado em lidar especificamente com o fator primo 2.
+            Ele é uma otimização para lidar com divisões repetidas por 2, que é o único número par que é primo.
+            Dividir o número por 2 repetidamente até que o número não seja mais divisível por 2 (ou seja, quando o resto da divisão não é mais zero) permite identificar o número de vezes que o fator 2 está presente na decomposição em fatores primos do número.
+            Isso permite que o algoritmo otimize a decomposição do fator 2 antes de continuar com outros fatores primos ímpares.
     */
 
     // Verificamos se o número for par, caso seja, significa que o fator primo 2 está presente na decomposição
@@ -157,8 +157,8 @@ int extended_euclides(int A, int D, int *s, int *t)
 }
 
 /*
-    Time Complexity: O(log N)
-    Auxiliary Space: O(log N)
+    Complexidade de Tempo: O(log N)
+    Espaço Auxiliar: O(log N)
 
     Como o Algoritmo de Euclides extendido funciona?
     ------------------------------------------------

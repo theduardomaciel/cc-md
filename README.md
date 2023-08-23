@@ -42,4 +42,4 @@ Repositório contendo todos os arquivos fonte em C desenvolvidos durante a maté
 -   [Artigo explicando o que são e como calcular os inversos modulares](https://www.khanacademy.org/computing/computer-science/cryptography/modarithmetic/a/modular-inverses)
 -   [Artigo com exemplos de código mostrando como calcular inversos modulares](https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/)
 
-#### Site geral que realiza os mais diversos tipos de código: https://www.dcode.fr/extended-gcd
+#### Site geral que realiza os mais diversos tipos de cálculo matemático: https://www.dcode.fr/extended-gcd
