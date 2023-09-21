@@ -1,0 +1,3 @@
+[submodule "projeto/cryptosia-web"]
+	path = projeto/cryptosia-web
+	url = https://github.com/theduardomaciel/cryptosia-web
