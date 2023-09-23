@@ -219,50 +219,67 @@ long int privateKey_d(long int totient, long int exponent)
         - Observação: esse algoritmo pode não ser adequado para a manipuação de números muito grandes, como os usados em chaves RSA de 2048 bits
 */
 
-unsigned long long int modular_pow(unsigned long long int base, unsigned long long int exponent, unsigned long long int modulus)
+unsigned long long int modular_pow(unsigned long long int base, unsigned long long int exponent, unsigned long long int mod)
 {
-    if (modulus * modulus > ULLONG_MAX)
+    if (mod <= 1)
     {
-        printf("Overflow");
-        return -1;
+        return 0;
     }
 
     unsigned long long int result = 1;
-    base = base % modulus;
+    base = base % mod;
 
     while (exponent > 0)
     {
+        // Se o expoente for ímpar, multiplicamos a base ao resultado.
         if (exponent % 2 == 1)
         {
-            result = (result * base) % modulus;
+            result = (result * base) % mod;
         }
+
+        printf("result: %llu\n", result);
+
+        // Agora, o expoente é sempre par, então podemos dividir a base ao quadrado.
+        base = (base * base) % mod;
         exponent = exponent >> 1; // dividimos o valor do expoente pela metade
-        base = (base * base) % modulus;
     }
 
     return result;
 }
 
-// Função para verificar se um mpz_t é maior que 64 bits
-int needs_gmp(unsigned long long int num)
+// FUNÇÃO ADAPTADA
+/* void modular_pow(mpz_t result, const mpz_t base, const mpz_t exponent, const mpz_t modulus)
 {
-    mpz_t mpz_num;
-    mpz_init_set_ui(mpz_num, num); // Convertemos o número para um mpz_t
+    // Criamos uma cópia do valor base para manipulação durante o cálculo
+    mpz_t base_copy;
+    mpz_init(base_copy);
+    mpz_set(base_copy, base);
 
-    int result = mpz_sizeinbase(mpz_num, 2) > 64; // Verificamos, na base 2, se o número é maior que 64 bits
+    // Inicializamos o resultado como 1
+    mpz_set_ui(result, 1);
 
-    mpz_clear(mpz_num);
+    // Realizamos a exponenciação modular
+    while (mpz_cmp_ui(exponent, 0) > 0)
+    {
+        // Se o expoente for ímpar, multiplicamos o resultado pelo valor base e fazemos a redução modular
+        if (mpz_odd_p(exponent))
+        {
+            mpz_mul(result, result, base_copy);
+            mpz_mod(result, result, modulus);
+        }
 
-    return result; // Se o número for maior que 64 bits, retornamos 1 (a biblioteca GMP deve ser usada), caso contrário, retornamos 0
+        // Elevamos o valor base ao quadrado e fazemos a redução modular
+        mpz_mul(base_copy, base_copy, base_copy);
+        mpz_mod(base_copy, base_copy, modulus);
+
+        // Dividimos o expoente por 2 (deslocamento à direita) para continuar a iteração
+        mpz_divexact_ui(exponent, exponent, 2);
+    }
+
+    // Liberamos a memória alocada para a cópia do valor base
+    mpz_clear(base_copy);
 }
-
-// Função para converter um mpz_t para um unsigned long long int
-unsigned long long mpz2ull(mpz_t z)
-{
-    unsigned long long result = 0;
-    mpz_export(&result, 0, -1, sizeof result, 0, 0, z);
-    return result;
-}
+ */
 
 /*
     CONCEITO MATEMÁTICO:
@@ -317,8 +334,8 @@ unsigned long long mpz2ull(mpz_t z)
 
 char *RSA_encrypt(const char *message, const char *e_string, const char *n_string, char *result)
 {
-    mpz_t current_char, e, n, current_encrypted_int;
-    mpz_inits(current_char, e, n, current_encrypted_int, NULL);
+    mpz_t current_char, e, n, current_encrypted;
+    mpz_inits(current_char, e, n, current_encrypted, NULL);
 
     // Convertemos os valores mpz_t (strings de números bem grandes) para a base decimal (10)
     mpz_set_str(e, e_string, 10);
@@ -335,13 +352,44 @@ char *RSA_encrypt(const char *message, const char *e_string, const char *n_strin
         // Alteramos o valor de "current_char" (em mpz_t) para o valor do caractere em numeral ASCII
         mpz_set_ui(current_char, ascii_value);
 
+        /*
+            OBSERVAÇÃO:
+            Para suportar acentos latinos e outros caracteres especiais, utilizamos a tabela ASCII estendida.
+            Para isso, descartamos a chamada de "mpz_set_ui" na linha acima e utilizamos o seguinte:
+                unsigned char current_char = (unsigned char)(message[i]);
+                mpz_set_ui(msg, current_char);
+         */
+
         // Realizamos a criptografia encontrando o equivalente cifrado "C" a partir da seguinte função:
         // C = (m ^ e) % n (m = caractere atual convertido em numeral ASCII, e = expoente, n = produto de p e q)
-        mpz_powm(current_encrypted_int, current_char, e, n);
 
-        // Convertemos o valor de "current_encrypted_int" para uma string (visto que o número pode ser bem grande)...
+        // Verificamos se os valores são grandes demais para serem manipulados pela nossa função de exponenciação modular rápida
+        mpz_t multiplication;
+        mpz_init(multiplication);
+
+        mpz_mul(multiplication, n, n);
+
+        // Caso seja possível, utilizamos nossa função própria de exponenciação modular rápida
+        if (mpz_fits_ulong_p(multiplication))
+        {
+            unsigned long long int current_char_int = mpz_get_ui(current_char);
+            unsigned long long int e_int = mpz_get_ui(e);
+            unsigned long long int n_int = mpz_get_ui(n);
+
+            unsigned long long int int_result = modular_pow(current_char_int, e_int, n_int);
+
+            // E convertemos o resultado de volta para um mpz_t, que será atribuido à variável "current_encrypted".
+            mpz_set_ui(current_encrypted, int_result);
+        }
+        else
+        {
+            // Caso não seja possível, utilizamos a função mpz_powm
+            mpz_powm(current_encrypted, current_char, e, n);
+        }
+
+        // Convertemos o valor de "current_encrypted" para uma string (visto que o número pode ser bem grande)...
         char encrypted_char[1024];
-        mpz_get_str(encrypted_char, 10, current_encrypted_int);
+        mpz_get_str(encrypted_char, 10, current_encrypted);
 
         strcat(result, encrypted_char); // ...e concatenamos o resultado com a variável "result"
 
@@ -351,7 +399,7 @@ char *RSA_encrypt(const char *message, const char *e_string, const char *n_strin
         }
     }
 
-    mpz_clears(current_char, e, n, current_encrypted_int, NULL);
+    mpz_clears(current_char, e, n, current_encrypted, NULL);
 }
 
 // ======================= DESENCRIPTAÇÃO DE MENSAGENS  ====================================
@@ -378,7 +426,30 @@ void RSA_decrypt(const char *encrypted_message, const char *d_string, const char
 
         // Realizamos a criptografia inversa para encontrar o caractere original (m) por meio da seguinte fórmula:
         // m = (c ^ d) % n (c = caractere cifrado, d = chave privada, n = produto de p e q)
-        mpz_powm(decrypted, encrypted, d, n);
+
+        // Verificamos se os valores são grandes demais para serem manipulados pela nossa função de exponenciação modular rápida
+        mpz_t multiplication;
+        mpz_init(multiplication);
+
+        mpz_mul(multiplication, n, n);
+
+        // Caso seja possível, utilizamos nossa função própria de exponenciação modular rápida
+        if (mpz_fits_ulong_p(multiplication))
+        {
+            unsigned long long int encrypted_int = mpz_get_ui(encrypted);
+            unsigned long long int d_int = mpz_get_ui(d);
+            unsigned long long int n_int = mpz_get_ui(n);
+
+            unsigned long long int int_result = modular_pow(encrypted_int, d_int, n_int);
+
+            // E convertemos o resultado de volta para um mpz_t, que será atribuido à variável "decrypted".
+            mpz_set_ui(decrypted, int_result);
+        }
+        else
+        {
+            // Caso não seja possível, utilizamos a função mpz_powm
+            mpz_powm(decrypted, encrypted, d, n);
+        }
 
         // Convertemos o valor de "decrypted" de mpz_t para um inteiro...
         unsigned long long int ascii_value = mpz_get_ui(decrypted);
@@ -394,33 +465,37 @@ void RSA_decrypt(const char *encrypted_message, const char *d_string, const char
 
 /*
     PARA TESTES:
-        Chave Privada: {
-            d = 44273
-            n = 49163
-        }
+        p: 42292427
+        q: 35526487
 
         Chave Pública {
-            e = 65537
-            n = 49163
+            e = 364822070128145
+            n = 1502501358013949
         }
+
+        Chave Privada: {
+            d = 558181515424889
+            n = 1502501358013949
+        }
+
 */
 
-int main()
+/* int main()
 {
-    const char *message = "Agora, mais difícil :) Né? Vários acentos e forças complicadas!"; // mensagem original
-    const char *e_str = "65537";                                                             // valor de e
-    const char *d_str = "44273";                                                             // valor de d
-    const char *n_str = "49163";                                                             // valor de n
-
-    char encrypted_result[1024] = {0};
-    char decrypted_result[1024] = {0};
-
-    RSA_encrypt(message, e_str, n_str, encrypted_result);
-    RSA_decrypt(encrypted_result, d_str, n_str, decrypted_result);
+    const char *message = "Agora, mais difícil! :)"; // mensagem original
+    const char *e_str = "364822070128145";           // valor de e
+    const char *d_str = "558181515424889";           // valor de d
+    const char *n_str = "1502501358013949";          // valor de n
 
     printf("Mensagem Original: %s\n", message);
+
+    char encrypted_result[1024] = {0};
+    RSA_encrypt(message, e_str, n_str, encrypted_result);
     printf("Mensagem Criptografada: %s\n", encrypted_result);
+
+    char decrypted_result[1024] = {0};
+    RSA_decrypt(encrypted_result, d_str, n_str, decrypted_result);
     printf("Mensagem Descriptografada: %s\n", decrypted_result);
 
     return 0;
-}
+} */

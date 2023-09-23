@@ -52,11 +52,19 @@ Os programas apresentados serão testados da seguinte forma:
 
 ### Link Úteis:
 
-#### Como implementar o backend em C
+#### [Método Utilizado] 💽 Como implementar o backend em C (compilação para JS)
+-   [Compilando C para JS com Emscripten](https://emscripten.org/docs/getting_started/downloads.html)
+-   [Compilando C para JS com Cheerp](https://leaningtech.com/cheerp/)
+-   [Compilando C para JS com WebAssembly](https://webassembly.org/getting-started/developers-guide/)
+-   [Compilando C para JS com WebAssembly e Emscripten](https://developer.mozilla.org/en-US/docs/WebAssembly/C_to_wasm)
+
+> **Observação:** Para o manejamento de números grandes, fizemos o uso da biblioteca [GMP](https://gmplib.org/), quando necessário.
+
+#### [Método Considerado] ☁️ Como implementar o backend em C (web server)
 -   [Como criar um servidor com sockets em C](https://beej.us/guide/bgnet/html/#system-calls-or-bust)
 -   [Dicas de um usuário de como criar um servidor HTTP simples em C](https://stackoverflow.com/questions/176409/build-a-simple-http-server-in-c)
 
-#### Serviços de web servers em C
+##### ⚙️ Serviços de Web servers em C (nenhum resultado satisfatório)
 -   [Mongoose](https://mongoose.ws/)
 -   [Biblioteca Vely](https://vely.dev/)
 -   [Web server LightTPD](http://www.lighttpd.net/)

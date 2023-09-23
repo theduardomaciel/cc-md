@@ -43,3 +43,4 @@ Repositório contendo todos os arquivos fonte em C desenvolvidos durante a maté
 -   [Artigo com exemplos de código mostrando como calcular inversos modulares](https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/)
 
 #### Site geral que realiza os mais diversos tipos de cálculo matemático: https://www.dcode.fr/extended-gcd
+#### Site que explica o funcionamento do algoritmo RSA passo a passo: https://www.cryptool.org/en/cto/rsa-step-by-step
