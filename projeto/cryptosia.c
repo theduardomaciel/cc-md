@@ -205,13 +205,18 @@ long int privateKey_d(long int totient, long int exponent)
     OPERADOR DE DESLOCAMENTO À DIREITA (>>)
         A operação exponent >> 1, por exemplo, desloca todos os bits de exponent uma posição para a direita, o que é equivalente a dividir o valor por 2 (ou seja, realizar uma divisão inteira por 2).
         O uso de deslocamento à direita (>>) é preferido em relação à divisão normal por 2, especialmente quando estamos trabalhando com números inteiros, pois é uma operação mais eficiente do ponto de vista computacional.
+
+    OBSERVAÇÕES DA BIBLIOTECA GMP:
+        1. "GMP integers are stored in objects of type mpz_t."
+        2. "Passing a zero divisor to the division or modulo functions (including the modular powering functions mpz_powm and mpz_powm_ui) will cause an intentional division by zero."
+        3. mpz_inits: "initialize a NULL-terminated list of mpz_t variables, and set their values to 0".
+        4. mpz_powm: "Set rop to base raised to exp modulo mod".
 */
 
 /*
-    FUNÇÃO DE EXPOENCIAÇÃO MODULAR RÁPIDA
+    FUNÇÃO DE EXPOENCIAÇÃO MODULAR RÁPIDA (utilizando "produto de quadrados")
         - (links importantes: https://en.wikipedia.org/wiki/Modular_exponentiation & https://en.wikipedia.org/wiki/Exponentiation_by_squaring)
-
-    Observação: esse algoritmo pode não ser adequado para a manipuação de números muito grandes, como os usados em chaves RSA de 2048 bits
+        - Observação: esse algoritmo pode não ser adequado para a manipuação de números muito grandes, como os usados em chaves RSA de 2048 bits
 */
 
 unsigned long long int modular_pow(unsigned long long int base, unsigned long long int exponent, unsigned long long int modulus)
@@ -238,6 +243,7 @@ unsigned long long int modular_pow(unsigned long long int base, unsigned long lo
     return result;
 }
 
+// Função para verificar se um mpz_t é maior que 64 bits
 int needs_gmp(unsigned long long int num)
 {
     mpz_t mpz_num;
@@ -258,27 +264,11 @@ unsigned long long mpz2ull(mpz_t z)
     return result;
 }
 
-// Função para detectar se um mpz_t ultrapassa os limites de unsigned long long int
-int mpz2ull_overflow(mpz_t z)
-{
-    unsigned long long result = 0;
-    mpz_export(&result, 0, -1, sizeof result, 0, 0, z);
-    return result == ULLONG_MAX && mpz_cmp_ui(z, ULLONG_MAX) > 0;
-}
-
 /*
     CONCEITO MATEMÁTICO:
     A mensagem é encriptada em blocos de tamanho fixo, onde cada bloco é um número inteiro entre 0 e n - 1.
     Para encriptar um bloco m, calculamos o resto da divisão de m elevado a e por n.
     Ou seja, c = (m ^ e) % n
-*/
-
-/*
-    OBSERVAÇÕES DA BIBLIOTECA GMP:
-        1. "GMP integers are stored in objects of type mpz_t."
-        2. "Passing a zero divisor to the division or modulo functions (including the modular powering functions mpz_powm and mpz_powm_ui) will cause an intentional division by zero."
-        3. mpz_inits: "initialize a NULL-terminated list of mpz_t variables, and set their values to 0".
-        4. mpz_powm: "Set rop to base raised to exp modulo mod".
 */
 
 /* EMSCRIPTEN_KEEPALIVE */
@@ -345,8 +335,8 @@ char *RSA_encrypt(const char *message, const char *e_string, const char *n_strin
         // Alteramos o valor de "current_char" (em mpz_t) para o valor do caractere em numeral ASCII
         mpz_set_ui(current_char, ascii_value);
 
-        // Realizamos a criptografia encontrando o equivalente cifrado "C" de "m" (letra atual convertida em inteiro) a partir da seguinte função:
-        // C = (m ^ e) % n (m = caractere atual, e = expoente, n = produto de p e q)
+        // Realizamos a criptografia encontrando o equivalente cifrado "C" a partir da seguinte função:
+        // C = (m ^ e) % n (m = caractere atual convertido em numeral ASCII, e = expoente, n = produto de p e q)
         mpz_powm(current_encrypted_int, current_char, e, n);
 
         // Convertemos o valor de "current_encrypted_int" para uma string (visto que o número pode ser bem grande)...
@@ -372,49 +362,35 @@ char *RSA_encrypt(const char *message, const char *e_string, const char *n_strin
     Ou seja, m = (c ^ d) % n
 */
 
-/* EMSCRIPTEN_KEEPALIVE */
-/* char *RSA_decrypt(const char *encrypted_message, const char *d_string, const char *n_string, char *result)
+void RSA_decrypt(const char *encrypted_message, const char *d_string, const char *n_string, char *result)
 {
     mpz_t encrypted, d, n, decrypted;
     mpz_inits(encrypted, d, n, decrypted, NULL);
 
-    // Convertemos os valores para a base decimal (10)
-    mpz_set_str(encrypted, encrypted_message, 10);
     mpz_set_str(d, d_string, 10);
     mpz_set_str(n, n_string, 10);
 
-    // Comos os processos matemáticos de criptografia devem ser feitos manualmente, não utilizaremos a função mpz_powm enquanto for possível
-    if (mpz2ull_overflow(d) || mpz2ull_overflow(n))
+    char *token = strtok((char *)encrypted_message, " "); // Divide a string por espaços
+
+    while (token != NULL)
     {
-        // Nos casos de números demasiadamente grandes, utilizamos a função mpz_powm
+        mpz_set_str(encrypted, token, 10); // Convertemos o valor para a base decimal (10)
+
+        // Realizamos a criptografia inversa para encontrar o caractere original (m) por meio da seguinte fórmula:
+        // m = (c ^ d) % n (c = caractere cifrado, d = chave privada, n = produto de p e q)
         mpz_powm(decrypted, encrypted, d, n);
-        mpz_get_str(result, 10, decrypted);
+
+        // Convertemos o valor de "decrypted" de mpz_t para um inteiro...
+        unsigned long long int ascii_value = mpz_get_ui(decrypted);
+
+        char decrypted_char[2] = {(char)ascii_value, '\0'}; // ...e convertemos o inteiro para um caractere
+        strcat(result, decrypted_char);
+
+        token = strtok(NULL, " "); // Próximo token
     }
-    else
-    {
-        // Para desencriptar, utilizaremos o método de exponenciação modular rápida
-        // Primeiramente convertemos os valores de mpz_t para long int
-        unsigned long long int base = mpz2ull(encrypted);
-        unsigned long long int exponent = mpz2ull(d);
-        unsigned long long int modulus = mpz2ull(n);
 
-        // Em seguida, utilizamos a função de exponenciação modular rápida
-        unsigned long long int int_result = modular_pow(base, exponent, modulus);
-
-        // E convertemos o resultado de volta para um mpz_t, que será atribuido à variável "decrypted".
-        mpz_set_ui(decrypted, int_result);
-
-        // Por fim, convertemos o valor de "decrypted" para uma string e retornamos o resultado.
-        // char *result_string = mpz_get_str(NULL, 10, decrypted);
-        mpz_get_str(result, 10, decrypted);
-
-        // return result_string;
-
-        // Não podemos limpar o valor de "decrypted" pois ele será retornado
-        mpz_clears(encrypted, d, n, decrypted, NULL); // mpz_clears: Free the space occupied by a NULL-terminated list of mpz_t variables.
-    }
+    mpz_clears(encrypted, d, n, decrypted, NULL);
 }
- */
 
 /*
     PARA TESTES:
@@ -431,20 +407,20 @@ char *RSA_encrypt(const char *message, const char *e_string, const char *n_strin
 
 int main()
 {
-    const char *message = "testando"; // mensagem original
-    const char *e_str = "65537";      // valor de e
-    const char *d_str = "44273";      // valor de d
-    const char *n_str = "49163";      // valor de n
+    const char *message = "Agora, mais difícil :) Né? Vários acentos e forças complicadas!"; // mensagem original
+    const char *e_str = "65537";                                                             // valor de e
+    const char *d_str = "44273";                                                             // valor de d
+    const char *n_str = "49163";                                                             // valor de n
 
     char encrypted_result[1024] = {0};
-    // char decrypted_result[1024] = {0};
+    char decrypted_result[1024] = {0};
 
     RSA_encrypt(message, e_str, n_str, encrypted_result);
-    // RSA_decrypt(encrypted_result, d_str, n_str, decrypted_result);
+    RSA_decrypt(encrypted_result, d_str, n_str, decrypted_result);
 
     printf("Mensagem Original: %s\n", message);
     printf("Mensagem Criptografada: %s\n", encrypted_result);
-    // printf("Mensagem Descriptografada: %s\n", decrypted_result);
+    printf("Mensagem Descriptografada: %s\n", decrypted_result);
 
     return 0;
 }
