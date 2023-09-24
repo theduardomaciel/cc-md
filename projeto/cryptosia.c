@@ -5,8 +5,8 @@
 #include <limits.h>
 #include <assert.h>
 
-#include <gmp.h>
 // #include <emscripten.h>
+#include "gmp.h"
 
 // ================= FUNÇÕES AUXILIARES ==============================
 
@@ -237,8 +237,6 @@ unsigned long long int modular_pow(unsigned long long int base, unsigned long lo
             result = (result * base) % mod;
         }
 
-        printf("result: %llu\n", result);
-
         // Agora, o expoente é sempre par, então podemos dividir a base ao quadrado.
         base = (base * base) % mod;
         exponent = exponent >> 1; // dividimos o valor do expoente pela metade
@@ -288,51 +286,7 @@ unsigned long long int modular_pow(unsigned long long int base, unsigned long lo
     Ou seja, c = (m ^ e) % n
 */
 
-/* EMSCRIPTEN_KEEPALIVE */
-/* char *RSA_encrypt(const char *message, const char *e_string, const char *n_string, char *result)
-{
-    mpz_t msg, e, n, encrypted;
-    mpz_inits(msg, e, n, encrypted, NULL); // mpz_inits: initialize a NULL-terminated list of mpz_t variables, and set their values to 0.
-
-    // Convertemos os valores para a base decimal (10)
-    mpz_set_str(msg, message, 10);
-    mpz_set_str(e, e_string, 10);
-    mpz_set_str(n, n_string, 10);
-
-    // Comos os processos matemáticos de criptografia devem ser feitos manualmente, não utilizaremos a função mpz_powm enquanto for possível
-    if (mpz2ull_overflow(e) || mpz2ull_overflow(n))
-    {
-        // Nos casos de números grandes demais, utilizamos a função mpz_powm
-        mpz_powm(encrypted, msg, e, n);
-        mpz_get_str(result, 10, encrypted);
-    }
-    else
-    {
-        // Para encriptar, utilizaremos o método de exponenciação modular rápida
-        // Primeiramente convertemos os valores de mpz_t para long int
-        unsigned long long int base = mpz2ull(msg);
-        unsigned long long int exponent = mpz2ull(e);
-        unsigned long long int modulus = mpz2ull(n);
-
-        // Em seguida, utilizamos a função de exponenciação modular rápida
-        unsigned long long int int_result = modular_pow(base, exponent, modulus);
-
-        // E convertemos o resultado de volta para um mpz_t, que será atribuido à variável "encrypted".
-        mpz_set_ui(encrypted, int_result);
-
-        // Por fim, convertemos o valor de "encrypted" para uma string e retornamos o resultado.
-        // char *result_string = mpz_get_str(NULL, 10, encrypted);
-        mpz_get_str(result, 10, encrypted);
-
-        // return result_string;
-
-        // Não podemos limpar o valor de "encrypted" pois ele será retornado
-        mpz_clears(msg, e, n, encrypted, NULL); // mpz_clears: Free the space occupied by a NULL-terminated list of mpz_t variables.
-    }
-}
- */
-
-char *RSA_encrypt(const char *message, const char *e_string, const char *n_string, char *result)
+void RSA_encrypt(const char *message, const char *e_string, const char *n_string, char *result)
 {
     mpz_t current_char, e, n, current_encrypted;
     mpz_inits(current_char, e, n, current_encrypted, NULL);
@@ -372,6 +326,7 @@ char *RSA_encrypt(const char *message, const char *e_string, const char *n_strin
         // Caso seja possível, utilizamos nossa função própria de exponenciação modular rápida
         if (mpz_fits_ulong_p(multiplication))
         {
+            printf("Fits ulong\n");
             unsigned long long int current_char_int = mpz_get_ui(current_char);
             unsigned long long int e_int = mpz_get_ui(e);
             unsigned long long int n_int = mpz_get_ui(n);
@@ -400,6 +355,37 @@ char *RSA_encrypt(const char *message, const char *e_string, const char *n_strin
     }
 
     mpz_clears(current_char, e, n, current_encrypted, NULL);
+}
+
+/* EMSCRIPTEN_KEEPALIVE */
+char *cryptosia_encrypt(const char *message, const char *e_string, const char *n_string)
+{
+    // Calcula o tamanho da mensagem original (em bytes)
+    size_t message_size = strlen(message);
+
+    // Calcula o tamanho máximo da mensagem criptografada
+    // Esta é uma aproximação bem grosseira, mas deve ser suficiente para nossos propósitos
+    size_t max_encrypted_size = message_size * 2; // Assumindo uma criptografia RSA típica com uma chave de 256 bits
+
+    // Aloca memória para a mensagem criptografada (mais um byte para o caractere nulo)
+    char *result = malloc((max_encrypted_size + 1) * sizeof(char));
+    if (result == NULL)
+    {
+        // Handle memory allocation error
+        return NULL;
+    }
+
+    // Criptografa a mensagem
+    RSA_encrypt(message, e_string, n_string, result);
+
+    // No futuro, caso inserirmos um sistema de verificação de erros, podemos retornar NULL caso a criptografia falhe
+    /* if (!RSA_encrypt(message, e_string, n_string, result)) {
+        // Handle encryption error
+        free(result);
+        return NULL;
+    } */
+
+    return result;
 }
 
 // ======================= DESENCRIPTAÇÃO DE MENSAGENS  ====================================
@@ -463,6 +449,37 @@ void RSA_decrypt(const char *encrypted_message, const char *d_string, const char
     mpz_clears(encrypted, d, n, decrypted, NULL);
 }
 
+/* EMSCRIPTEN_KEEPALIVE */
+char *cryptosia_decrypt(const char *encrypted_message, const char *d_string, const char *n_string)
+{
+    // Calcula o tamanho da mensagem criptografada (em bytes)
+    size_t encrypted_size = strlen(encrypted_message);
+
+    // Calcula o tamanho máximo da mensagem descriptografada
+    // Esta é uma aproximação bem grosseira, mas deve ser suficiente para nossos propósitos
+    size_t max_decrypted_size = encrypted_size / 2; // Assumindo uma criptografia RSA típica com uma chave de 256 bits
+
+    // Aloca memória para a mensagem descriptografada (mais um byte para o caractere nulo)
+    char *result = malloc((max_decrypted_size + 1) * sizeof(char));
+    if (result == NULL)
+    {
+        // Handle memory allocation error
+        return NULL;
+    }
+
+    // Descriptografa a mensagem
+    RSA_decrypt(encrypted_message, d_string, n_string, result);
+
+    // No futuro, caso inserirmos um sistema de verificação de erros, podemos retornar NULL caso a descriptografia falhe
+    /* if (!RSA_decrypt(encrypted_message, d_string, n_string, result)) {
+        // Handle decryption error
+        free(result);
+        return NULL;
+    } */
+
+    return result;
+}
+
 /*
     PARA TESTES:
         p: 42292427
@@ -478,16 +495,24 @@ void RSA_decrypt(const char *encrypted_message, const char *d_string, const char
             n = 1502501358013949
         }
 
+    const char *e_str = "364822070128145"; // valor de e
+    const char *d_str = "558181515424889"; // valor de d
+    const char *n_str = "1502501358013949";// valor de n
+
+    CHAVES MENORES:
+    const char *e_str = "65537";
+    const char *d_str = "44273";
+    const char *n_str = "49163";
 */
 
-/* int main()
+int main()
 {
     const char *message = "Agora, mais difícil! :)"; // mensagem original
     const char *e_str = "364822070128145";           // valor de e
     const char *d_str = "558181515424889";           // valor de d
     const char *n_str = "1502501358013949";          // valor de n
 
-    printf("Mensagem Original: %s\n", message);
+    /* printf("Mensagem Original: %s\n", message);
 
     char encrypted_result[1024] = {0};
     RSA_encrypt(message, e_str, n_str, encrypted_result);
@@ -495,7 +520,15 @@ void RSA_decrypt(const char *encrypted_message, const char *d_string, const char
 
     char decrypted_result[1024] = {0};
     RSA_decrypt(encrypted_result, d_str, n_str, decrypted_result);
+    printf("Mensagem Descriptografada: %s\n", decrypted_result); */
+
+    char encrypted_result[1024] = {0};
+    memcpy(encrypted_result, cryptosia_encrypt(message, e_str, n_str), 1024);
+    printf("Mensagem Criptografada: %s\n", encrypted_result);
+
+    char decrypted_result[1024] = {0};
+    memcpy(decrypted_result, cryptosia_decrypt(encrypted_result, d_str, n_str), 1024);
     printf("Mensagem Descriptografada: %s\n", decrypted_result);
 
     return 0;
-} */
+}
