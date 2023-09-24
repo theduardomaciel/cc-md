@@ -1,3 +1,6 @@
 [submodule "projeto/cryptosia-web"]
 	path = projeto/cryptosia-web
 	url = https://github.com/theduardomaciel/cryptosia-web
+[submodule "projeto/emsdk"]
+	path = projeto/emsdk
+	url = https://github.com/emscripten-core/emsdk.git
