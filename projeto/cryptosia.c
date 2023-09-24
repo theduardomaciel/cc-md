@@ -245,7 +245,7 @@ unsigned long long int modular_pow(unsigned long long int base, unsigned long lo
     return result;
 }
 
-// FUNÇÃO ADAPTADA
+// FUNÇÃO ADAPTADA PARA A BIBLIOTECA GMP
 /* void modular_pow(mpz_t result, const mpz_t base, const mpz_t exponent, const mpz_t modulus)
 {
     // Criamos uma cópia do valor base para manipulação durante o cálculo
@@ -279,42 +279,44 @@ unsigned long long int modular_pow(unsigned long long int base, unsigned long lo
 }
  */
 
-/*
-    CONCEITO MATEMÁTICO:
-    A mensagem é encriptada em blocos de tamanho fixo, onde cada bloco é um número inteiro entre 0 e n - 1.
-    Para encriptar um bloco m, calculamos o resto da divisão de m elevado a e por n.
-    Ou seja, c = (m ^ e) % n
-*/
-
-void RSA_encrypt(const char *message, const char *e_string, const char *n_string, char *result)
+void RSA_encrypt(const char *message, const char *e_string, const char *n_string, char **result)
 {
-    mpz_t current_char, e, n, current_encrypted;
-    mpz_inits(current_char, e, n, current_encrypted, NULL);
+    mpz_t msg, e, n, encrypted;
+    mpz_inits(msg, e, n, encrypted, NULL);
 
-    // Convertemos os valores mpz_t (strings de números bem grandes) para a base decimal (10)
+    // Configuramos a chave pública, expressa em valores mpz_t (strings de números bem grandes), para a base decimal (10)
     mpz_set_str(e, e_string, 10);
     mpz_set_str(n, n_string, 10);
 
-    size_t message_length = strlen(message);
+    size_t msg_len = strlen(message);       // Obtemos o tamanho da mensagem de entrada
+    *result = (char *)malloc(msg_len * 20); // Alocamos memória para armazenar a mensagem criptografada (20 é um tamanho aproximado)
 
-    // Loopamos por cada caractere da mensagem
-    for (size_t i = 0; i < message_length; i++)
+    if (*result == NULL)
     {
-        // Traduzimos o valor do caractere em um inteiro obtendo o correspondente do caractere em numeral ASCII
-        long int ascii_value = (long int)(message[i]);
+        fprintf(stderr, "Erro na alocação de memória.\n");
+        exit(1);
+    }
 
-        // Alteramos o valor de "current_char" (em mpz_t) para o valor do caractere em numeral ASCII
-        mpz_set_ui(current_char, ascii_value);
+    char *current_position = *result; // Ponto de partida para escrever na memória alocada
+
+    for (size_t i = 0; i < msg_len; i++)
+    {
+        unsigned char current_char = (unsigned char)(message[i]); // Obtemos o caractere atual
+        mpz_set_ui(msg, current_char);                            // Configuramos o número mpz_t com o valor ASCII do caractere
 
         /*
-            OBSERVAÇÃO:
-            Para suportar acentos latinos e outros caracteres especiais, utilizamos a tabela ASCII estendida.
-            Para isso, descartamos a chamada de "mpz_set_ui" na linha acima e utilizamos o seguinte:
-                unsigned char current_char = (unsigned char)(message[i]);
-                mpz_set_ui(msg, current_char);
-         */
+            Para limitar os caracteres à tabela ASCII, utilizaríamos o seguinte:
 
-        // Realizamos a criptografia encontrando o equivalente cifrado "C" a partir da seguinte função:
+            // Traduzimos o valor do caractere em um inteiro obtendo o correspondente do caractere em numeral ASCII
+            long int ascii_value = (long int)(message[i]);
+
+            // Alteramos o valor de "current_char" (em mpz_t) para o valor do caractere em numeral ASCII
+            mpz_set_ui(msg, ascii_value);
+        */
+
+        // ========
+
+        // Realizamos a criptografia RSA encontrando o equivalente cifrado "C" a partir da seguinte função:
         // C = (m ^ e) % n (m = caractere atual convertido em numeral ASCII, e = expoente, n = produto de p e q)
 
         // Verificamos se os valores são grandes demais para serem manipulados pela nossa função de exponenciação modular rápida
@@ -326,64 +328,60 @@ void RSA_encrypt(const char *message, const char *e_string, const char *n_string
         // Caso seja possível, utilizamos nossa função própria de exponenciação modular rápida
         if (mpz_fits_ulong_p(multiplication))
         {
-            printf("Fits ulong\n");
-            unsigned long long int current_char_int = mpz_get_ui(current_char);
+            // printf("Fits ulong\n");
+            unsigned long long int msg_int = mpz_get_ui(msg);
             unsigned long long int e_int = mpz_get_ui(e);
             unsigned long long int n_int = mpz_get_ui(n);
 
-            unsigned long long int int_result = modular_pow(current_char_int, e_int, n_int);
+            unsigned long long int int_result = modular_pow(msg_int, e_int, n_int);
 
-            // E convertemos o resultado de volta para um mpz_t, que será atribuido à variável "current_encrypted".
-            mpz_set_ui(current_encrypted, int_result);
+            // E convertemos o resultado de volta para um mpz_t, que será atribuido à variável "encrypted".
+            mpz_set_ui(encrypted, int_result);
         }
         else
         {
             // Caso não seja possível, utilizamos a função mpz_powm
-            mpz_powm(current_encrypted, current_char, e, n);
+            mpz_powm(encrypted, msg, e, n);
         }
 
-        // Convertemos o valor de "current_encrypted" para uma string (visto que o número pode ser bem grande)...
-        char encrypted_char[1024];
-        mpz_get_str(encrypted_char, 10, current_encrypted);
+        mpz_clear(multiplication); // Liberamos a memória usada pelo número mpz_t
 
-        strcat(result, encrypted_char); // ...e concatenamos o resultado com a variável "result"
+        // ========
 
-        if (i < message_length - 1)
+        char encrypted_char[1024];                  // Criamos um Buffer para armazenar a representação em string do número criptografado
+        mpz_get_str(encrypted_char, 10, encrypted); // Convertemos o número criptografado para uma string
+
+        strcat(current_position, encrypted_char); // Concatenamos o número criptografado à string de resultado
+
+        if (i < msg_len - 1)
         {
-            strcat(result, " "); // Adicionamos espaço ENTRE os números
+            strcat(current_position, " "); // Adicionamos espaço entre os números criptografados
+        }
+
+        current_position += strlen(encrypted_char); // Movemos o ponteiro de posição para o próximo espaço disponível
+
+        // Devemos nos certificar de não ultrapassar o espaço alocado
+        if (current_position - *result >= (msg_len * 20))
+        {
+            fprintf(stderr, "Erro: Espaço alocado insuficiente.\n");
+            exit(1);
         }
     }
 
-    mpz_clears(current_char, e, n, current_encrypted, NULL);
+    mpz_clears(msg, e, n, encrypted, NULL); // Liberamos a memória usada pelos números mpz_t
 }
 
 /* EMSCRIPTEN_KEEPALIVE */
 char *cryptosia_encrypt(const char *message, const char *e_string, const char *n_string)
 {
-    // Calcula o tamanho da mensagem original (em bytes)
-    size_t message_size = strlen(message);
+    char *result = NULL;
 
-    // Calcula o tamanho máximo da mensagem criptografada
-    // Esta é uma aproximação bem grosseira, mas deve ser suficiente para nossos propósitos
-    size_t max_encrypted_size = message_size * 2; // Assumindo uma criptografia RSA típica com uma chave de 256 bits
+    printf("Mensagem Original: %s\n", message);
+    printf("Chave Pública: e = %s, n = %s\n", e_string, n_string);
 
-    // Aloca memória para a mensagem criptografada (mais um byte para o caractere nulo)
-    char *result = malloc((max_encrypted_size + 1) * sizeof(char));
-    if (result == NULL)
-    {
-        // Handle memory allocation error
-        return NULL;
-    }
+    RSA_encrypt(message, e_string, n_string, &result);
 
-    // Criptografa a mensagem
-    RSA_encrypt(message, e_string, n_string, result);
-
-    // No futuro, caso inserirmos um sistema de verificação de erros, podemos retornar NULL caso a criptografia falhe
-    /* if (!RSA_encrypt(message, e_string, n_string, result)) {
-        // Handle encryption error
-        free(result);
-        return NULL;
-    } */
+    printf("Mensagem Criptografada: %s\n", result);
 
     return result;
 }
@@ -396,22 +394,35 @@ char *cryptosia_encrypt(const char *message, const char *e_string, const char *n
     Ou seja, m = (c ^ d) % n
 */
 
-void RSA_decrypt(const char *encrypted_message, const char *d_string, const char *n_string, char *result)
+void RSA_decrypt(const char *encrypted_message, const char *d_str, const char *n_str, char **result)
 {
     mpz_t encrypted, d, n, decrypted;
     mpz_inits(encrypted, d, n, decrypted, NULL);
 
-    mpz_set_str(d, d_string, 10);
-    mpz_set_str(n, n_string, 10);
+    // Configuramos a chave pública, expressa em valores mpz_t (strings de números bem grandes), para a base decimal (10)
+    mpz_set_str(d, d_str, 10);
+    mpz_set_str(n, n_str, 10);
 
-    char *token = strtok((char *)encrypted_message, " "); // Divide a string por espaços
+    size_t encrypted_len = strlen(encrypted_message); // Obtemos o tamanho da mensagem criptografada
+    *result = (char *)malloc(encrypted_len * 2);      // Alocamos memória para armazenar a mensagem descriptografada (2 é um tamanho aproximado)
+
+    if (*result == NULL)
+    {
+        fprintf(stderr, "Erro na alocação de memória.\n");
+        exit(1);
+    }
+
+    char *current_position = *result;                     // Criamos um ponto de partida para escrever na memória alocada
+    char *token = strtok((char *)encrypted_message, " "); // Dividimos a string criptografada por espaços
 
     while (token != NULL)
     {
-        mpz_set_str(encrypted, token, 10); // Convertemos o valor para a base decimal (10)
+        mpz_set_str(encrypted, token, 10); // Convertemos o token (número criptografado) para mpz_t
 
-        // Realizamos a criptografia inversa para encontrar o caractere original (m) por meio da seguinte fórmula:
-        // m = (c ^ d) % n (c = caractere cifrado, d = chave privada, n = produto de p e q)
+        // ========
+
+        // Realizamos a descriptografia RSA encontrando o equivalente decifrado "M" a partir da seguinte função:
+        // M = (c ^ d) % n (c = número criptografado, d = expoente, n = produto de p e q)
 
         // Verificamos se os valores são grandes demais para serem manipulados pela nossa função de exponenciação modular rápida
         mpz_t multiplication;
@@ -422,6 +433,7 @@ void RSA_decrypt(const char *encrypted_message, const char *d_string, const char
         // Caso seja possível, utilizamos nossa função própria de exponenciação modular rápida
         if (mpz_fits_ulong_p(multiplication))
         {
+            printf("Fits ulong\n");
             unsigned long long int encrypted_int = mpz_get_ui(encrypted);
             unsigned long long int d_int = mpz_get_ui(d);
             unsigned long long int n_int = mpz_get_ui(n);
@@ -437,45 +449,37 @@ void RSA_decrypt(const char *encrypted_message, const char *d_string, const char
             mpz_powm(decrypted, encrypted, d, n);
         }
 
-        // Convertemos o valor de "decrypted" de mpz_t para um inteiro...
-        unsigned long long int ascii_value = mpz_get_ui(decrypted);
+        mpz_clear(multiplication); // Liberamos a memória usada pelo número mpz_t
 
-        char decrypted_char[2] = {(char)ascii_value, '\0'}; // ...e convertemos o inteiro para um caractere
-        strcat(result, decrypted_char);
+        // ========
 
-        token = strtok(NULL, " "); // Próximo token
+        unsigned long long int ascii_value = mpz_get_ui(decrypted); // Obtemos o valor ASCII descriptografado
+
+        char decrypted_char[2] = {(char)ascii_value, '\0'}; // Convertemos o valor ASCII de volta para caractere
+        strcat(current_position, decrypted_char);           // Concatenamos o caractere à string de resultado
+
+        current_position += strlen(decrypted_char); // Move o ponteiro de posição para o próximo espaço disponível
+
+        // Devemos nos certificar de não ultrapassar o espaço alocado
+        if (current_position - *result >= (encrypted_len * 2))
+        {
+            fprintf(stderr, "Erro: Espaço alocado insuficiente.\n");
+            exit(1);
+        }
+
+        token = strtok(NULL, " "); // Passamos para o próximo token (número criptografado)
     }
 
-    mpz_clears(encrypted, d, n, decrypted, NULL);
+    mpz_clears(encrypted, d, n, decrypted, NULL); // Liberamos a memória usada pelos números mpz_t
 }
 
 /* EMSCRIPTEN_KEEPALIVE */
 char *cryptosia_decrypt(const char *encrypted_message, const char *d_string, const char *n_string)
 {
-    // Calcula o tamanho da mensagem criptografada (em bytes)
-    size_t encrypted_size = strlen(encrypted_message);
+    char *result = NULL;
+    RSA_decrypt(encrypted_message, d_string, n_string, &result);
 
-    // Calcula o tamanho máximo da mensagem descriptografada
-    // Esta é uma aproximação bem grosseira, mas deve ser suficiente para nossos propósitos
-    size_t max_decrypted_size = encrypted_size / 2; // Assumindo uma criptografia RSA típica com uma chave de 256 bits
-
-    // Aloca memória para a mensagem descriptografada (mais um byte para o caractere nulo)
-    char *result = malloc((max_decrypted_size + 1) * sizeof(char));
-    if (result == NULL)
-    {
-        // Handle memory allocation error
-        return NULL;
-    }
-
-    // Descriptografa a mensagem
-    RSA_decrypt(encrypted_message, d_string, n_string, result);
-
-    // No futuro, caso inserirmos um sistema de verificação de erros, podemos retornar NULL caso a descriptografia falhe
-    /* if (!RSA_decrypt(encrypted_message, d_string, n_string, result)) {
-        // Handle decryption error
-        free(result);
-        return NULL;
-    } */
+    printf("Mensagem Descriptografada: %s\n", result);
 
     return result;
 }
@@ -505,30 +509,26 @@ char *cryptosia_decrypt(const char *encrypted_message, const char *d_string, con
     const char *n_str = "49163";
 */
 
-int main()
+/* int main()
 {
-    const char *message = "Agora, mais difícil! :)"; // mensagem original
-    const char *e_str = "364822070128145";           // valor de e
-    const char *d_str = "558181515424889";           // valor de d
-    const char *n_str = "1502501358013949";          // valor de n
+    const char *message = "A acentuação gráfica consiste na colocação de acento ortográfico para indicar a pronúncia de uma vogal ou marcar a sílaba tônica de uma palavra. Os nomes dos acentos gráficos da língua portuguesa são...";
 
-    /* printf("Mensagem Original: %s\n", message);
+    const char *e_str = "364822070128145";  // valor de e
+    const char *d_str = "558181515424889";  // valor de d
+    const char *n_str = "1502501358013949"; // valor de n
 
-    char encrypted_result[1024] = {0};
-    RSA_encrypt(message, e_str, n_str, encrypted_result);
+    printf("Mensagem Original: %s\n", message);
+
+    char *encrypted_result = NULL;
+    RSA_encrypt(message, e_str, n_str, &encrypted_result);
     printf("Mensagem Criptografada: %s\n", encrypted_result);
 
-    char decrypted_result[1024] = {0};
-    RSA_decrypt(encrypted_result, d_str, n_str, decrypted_result);
-    printf("Mensagem Descriptografada: %s\n", decrypted_result); */
-
-    char encrypted_result[1024] = {0};
-    memcpy(encrypted_result, cryptosia_encrypt(message, e_str, n_str), 1024);
-    printf("Mensagem Criptografada: %s\n", encrypted_result);
-
-    char decrypted_result[1024] = {0};
-    memcpy(decrypted_result, cryptosia_decrypt(encrypted_result, d_str, n_str), 1024);
+    char *decrypted_result = NULL;
+    RSA_decrypt(encrypted_result, d_str, n_str, &decrypted_result);
     printf("Mensagem Descriptografada: %s\n", decrypted_result);
 
+    free(encrypted_result); // Liberar memória alocada
+    free(decrypted_result); // Liberar memória alocada
+
     return 0;
-}
+} */
