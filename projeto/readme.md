@@ -10,7 +10,7 @@
 > O frontend do projeto está disponível em: [https://github.com/theduardomaciel/cryptosia-web](https://github.com/theduardomaciel/cryptosia-web)
 
 ## Requisitos do projeto sobre Criptografia RSA: 
-Desenvolver um programa com interface gráfica e backend que realize as seguintes tarefa
+Desenvolver um programa com interface gráfica e backend que realize as seguintes tarefas:
 
 Solicite que o usuário escolha entre 3 opções: 
 

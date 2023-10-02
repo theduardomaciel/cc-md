@@ -5,13 +5,74 @@
 #include <limits.h>
 #include <assert.h>
 
-// #include <emscripten.h>
+#include <emscripten.h>
 #include "gmp.h"
 
 // ================= FUNÇÕES AUXILIARES ==============================
 
-/* EMSCRIPTEN_KEEPALIVE */
-long int mdc(long int a, long int b)
+EMSCRIPTEN_KEEPALIVE
+#include <stdio.h>
+#include <stdlib.h>
+#include <gmp.h>
+
+/* char *mdc(const char *a_str, const char *b_str)
+{
+    // Convertemos as strings em números inteiros.
+    long long int a = atoll(a_str);
+    long long int b = atoll(b_str);
+
+    // Calcula o MDC manualmente.
+    while (b != 0)
+    {
+        long long int temp = b;
+        b = a % b;
+        a = temp;
+    }
+
+    // Convertemos o resultado em uma string.
+    char gcd_str[64]; // Tamanho arbitrário para a string.
+    snprintf(gcd_str, sizeof(gcd_str), "%lld", a);
+
+    // Alocamos memória e copia o resultado para uma string dinâmica.
+    char *result = strdup(gcd_str);
+
+    // Retornamos a string do MDC.
+    return result;
+}
+ */
+
+char *mdc(const char *a_str, const char *b_str)
+{
+    // Inicializamos objetos GMP para os números a e b.
+    mpz_t a, b;
+    mpz_inits(a, b, NULL);
+
+    // Convertemos as strings em objetos GMP.
+    mpz_set_str(a, a_str, 10);
+    mpz_set_str(b, b_str, 10);
+
+    // Calculamos o MDC manualmente
+    while (mpz_cmp_ui(b, 0) != 0)
+    {
+        mpz_t temp;
+        mpz_init(temp);
+        mpz_set(temp, b);
+        mpz_mod(b, a, b);
+        mpz_set(a, temp);
+        mpz_clear(temp);
+    }
+
+    // Convertemos o resultado em uma string.
+    char *gcd_str = mpz_get_str(NULL, 10, a);
+
+    // Liberamos a memória dos objetos GMP.
+    mpz_clears(a, b, NULL);
+
+    // Retornamos a string do MDC.
+    return gcd_str;
+}
+
+/* unsigned long long int mdc(unsigned long long int a, unsigned long long int b)
 {
     if (b == 0)
     {
@@ -21,16 +82,16 @@ long int mdc(long int a, long int b)
     {
         return mdc(b, a % b);
     }
-}
+} */
 
-long int isPrime(long int n)
+int isPrime(unsigned long long int n)
 {
     if (n == 2 || n == 3)
     {
         return 1;
     }
 
-    for (long int i = 2; i <= sqrt(n); i++)
+    for (unsigned long long int i = 2; i <= sqrt(n); i++)
     {
         if (n % i == 0)
         {
@@ -50,82 +111,106 @@ long int isPrime(long int n)
 
 // ===============================================
 
+/*
+    TABELA DE ERROS:
+        A = o valor de p ou q ultrapassa os limites da linguagem C
+        B = o valor do produto de p e q é menor que 256, ou seja, a criptografia não é suficientemente segura
+        C = o valor de p não é primo
+        D = o valor de q não é primo
+        E = o valor de p ou q não é primo
+*/
+
 // A chave pública é constituída por dois elementos: n e e
 // O elemento n é o produto de dois números primos p e q
 // O elemento e é um expoente co-primo com o totiente de n
 // O elemento d é o inverso multiplicativo de e módulo o totiente de n
 
-// O par (n, e) forma a chave pública.
-// O par (n, d) forma a chave privada.
-
-/*
-    TABELA DE ERROS: "n_factor"
-        -1 = o valor de p ou q ultrapassa os limites da linguagem C
-        -2 = o valor do produto de p e q é menor que 256, ou seja, a criptografia não é suficientemente segura
-        -3 = o valor de p não é primo
-        -4 = o valor de q não é primo
-        -5 = o valor de p ou q não é primo
-*/
+// O par (e, n) forma a chave pública.
+// O par (d, n) forma a chave privada.
 
 /*
     CONCEITO MATEMÁTICO:
     "p" e "q" são dois números primos grandes distintos. Esses números são mantidos em segredo e não são compartilhados.
 */
 
-long int verifications(long int p, long int q)
+char *verifications(const char *p_str, const char *q_str)
 {
-    long int is_p_prime = isPrime(p);
-    long int is_q_prime = isPrime(q);
+    mpz_t p, q;
+    mpz_t p_times_q;
+    int result = 1; // Inicializa com 1 como padrão
 
-    if (p > INT_MAX || q > INT_MAX)
+    mpz_init(p);
+    mpz_init(q);
+    mpz_init(p_times_q);
+
+    mpz_set_str(p, p_str, 10);
+    mpz_set_str(q, q_str, 10);
+
+    int is_p_prime = isPrime(mpz_get_ui(p));
+    int is_q_prime = isPrime(mpz_get_ui(q));
+
+    if (mpz_cmp_ui(p_times_q, 256) < 0)
     {
-        return -1;
-    }
-    else if (p * q < 256)
-    {
-        return -2;
+        result = -2;
     }
     else if (!is_p_prime && is_q_prime)
     {
-        return -3;
+        result = -3;
     }
     else if (!is_q_prime && is_p_prime)
     {
-        return -4;
+        result = -4;
     }
     else if (!is_p_prime && !is_q_prime)
     {
-        return -5;
+        result = -5;
     }
-    else
-    {
-        return 1;
-    }
+
+    mpz_clear(p);
+    mpz_clear(q);
+    mpz_clear(p_times_q);
+
+    char *result_str = malloc(2); // Aloca espaço para um inteiro com até 2 dígitos
+    snprintf(result_str, 2, "%d", result);
+
+    printf("Resultado das verificações: %s\n", result_str);
+
+    return result_str;
 }
 
 // ELEMENTO DA CHAVE PÚBLICA E PRIVADA
-/* EMSCRIPTEN_KEEPALIVE */
-unsigned long int n_factor(long int p, long int q)
+EMSCRIPTEN_KEEPALIVE
+char *n_factor(const char *p_str, const char *q_str)
 {
-    long int verificationsResult = verifications(p, q);
+    char *verificationsResult = verifications(p_str, q_str);
 
-    if (verificationsResult < 0)
+    if (verificationsResult[0] == '-')
     {
-        return verificationsResult;
+        mpz_t p, q, n;
+        mpz_init(p);
+        mpz_init(q);
+        mpz_init(n);
+
+        mpz_set_str(p, p_str, 10);
+        mpz_set_str(q, q_str, 10);
+
+        mpz_mul(n, p, q);
+
+        char *result_str = mpz_get_str(NULL, 10, n);
+
+        mpz_clear(p);
+        mpz_clear(q);
+        mpz_clear(n);
+
+        free(verificationsResult); // Liberar a memória alocada para verificationsResult
+
+        return result_str;
     }
     else
     {
-        printf("p: %ld e q: %ld", p, q);
-        return p * q;
+        return verificationsResult;
     }
 }
-
-/*
-    TABELA DE ERROS: "publicKey_totient"
-        -1 = o valor de p ou q ultrapassa os limites da linguagem C
-        -3 = o valor de p não é primo
-        -4 = o valor de q não é primo
-*/
 
 /*
     CONCEITO MATEMÁTICO:
@@ -137,19 +222,38 @@ unsigned long int n_factor(long int p, long int q)
     Portanto, para calcular a chave privada utilizamos a função totiente de Euler calculando: φ(n) = (p - 1) * (q - 1)
 */
 
-/* EMSCRIPTEN_KEEPALIVE */
-unsigned long int publicKey_totient(long int p, long int q)
+EMSCRIPTEN_KEEPALIVE
+char *publicKey_totient(const char *p_str, const char *q_str)
 {
-    long int verificationsResult = verifications(p, q);
+    mpz_t p, q, totient;
+    mpz_inits(p, q, totient, NULL);
 
-    if (verificationsResult < 0)
+    mpz_set_str(p, p_str, 10);
+    mpz_set_str(q, q_str, 10);
+
+    char *verificationsResult = verifications(p_str, q_str);
+
+    if (verificationsResult[0] == '-')
     {
-        return verificationsResult;
+        mpz_sub_ui(p, p, 1);
+        mpz_sub_ui(q, q, 1);
+        mpz_mul(totient, p, q);
+
+        char *totient_str = mpz_get_str(NULL, 10, totient);
+
+        mpz_clear(p);
+        mpz_clear(q);
+        mpz_clear(totient);
+        free(verificationsResult);
+
+        return totient_str;
     }
     else
     {
-        printf("p: %ld e q: %ld", p, q);
-        return (p - 1) * (q - 1);
+        mpz_clear(p);
+        mpz_clear(q);
+        mpz_clear(totient);
+        return verificationsResult;
     }
 }
 
@@ -159,20 +263,73 @@ unsigned long int publicKey_totient(long int p, long int q)
     O valor de e deve ser menor do que φ(n) e maior do que 1.
 */
 
-// 2ª ELEMENTO DA CHAVE PÚBLICA
-/* EMSCRIPTEN_KEEPALIVE */
-long int publicKey_e(long int totient, long int initialExponent)
+EMSCRIPTEN_KEEPALIVE
+// Função para encontrar os n primeiros expoentes coprimos em relação ao totiente dado como string.
+// Recebe o totiente como um char* e retorna uma string contendo os expoentes separados por espaços.
+char *publicKey_e(const char *totient_str, int n)
 {
-    // Caso estejamos em uma requisição da função em loop, continuamos com base no último expoente retornado + 1
-    // Caso contrário, começamos com o expoente 2, visto que o expoente deve ser maior que 1
-    long int exponent = initialExponent > 0 ? initialExponent + 1 : 2;
+    // Inicializamos o objeto GMP para o totiente.
+    mpz_t totient;
+    mpz_init(totient);
 
-    while (mdc(exponent, totient) != 1)
+    // Convertemos a string do totiente para um objeto mpz_t.
+    mpz_set_str(totient, totient_str, 10);
+
+    // Inicializamos o objeto GMP para o expoente.
+    mpz_t exponent;
+    mpz_init(exponent);
+
+    // Inicializamos o objeto GMP para o valor "1".
+    mpz_t one;
+    mpz_init_set_ui(one, 1);
+
+    int count = 0;
+    char *coprime_exponents_str = NULL;
+    size_t len = 0; // Declaramos o tamanho inicial da string.
+
+    // Loopamos até encontrar os n primeiros expoentes coprimos.
+    while (count < n)
     {
-        exponent++;
+        printf("count: %d\n", count);
+        printf("Expoente atual: %s\n", mpz_get_str(NULL, 10, exponent));
+        // Calculamos o MDC entre o expoente e o totiente como strings.
+        char *mdc_result = mdc(mpz_get_str(NULL, 10, exponent), totient_str);
+        printf("MDC: %s\n", mdc_result);
+        printf("strcmp: %d\n", strcmp(mdc_result, "1"));
+
+        // Então, se o MDC for igual a "1", o expoente é coprimo.
+        if (strcmp(mdc_result, "1") == 0)
+        {
+            // Como o expoente é coprimo, alocamos memória suficiente para acomodar o novo expoente.
+            char *temp = coprime_exponents_str;
+            size_t new_len = len + strlen(mpz_get_str(NULL, 10, exponent)) + (len == 0 ? 0 : 1); // +1 para o espaço, se não for o primeiro.
+            coprime_exponents_str = (char *)malloc(new_len + 1);                                 // +1 para o caractere nulo.
+
+            // Concatenamos o novo expoente à string de resultados.
+            if (len > 0)
+            {
+                snprintf(coprime_exponents_str, new_len + 1, "%s %s", temp, mpz_get_str(NULL, 10, exponent));
+                free(temp);
+            }
+            else
+            {
+                snprintf(coprime_exponents_str, new_len + 1, "%s", mpz_get_str(NULL, 10, exponent));
+            }
+
+            len = new_len;
+            count++;
+        }
+
+        // Incrementamos o expoente.
+        mpz_add_ui(exponent, exponent, 1);
+        free(mdc_result);
     }
 
-    return exponent;
+    // Liberamos a memória dos objetos GMP.
+    mpz_clears(totient, exponent, one, NULL);
+
+    // Retornamos a string contendo os expoentes coprimos separados por espaços.
+    return coprime_exponents_str;
 }
 
 /*
@@ -181,16 +338,35 @@ long int publicKey_e(long int totient, long int initialExponent)
     Isso significa encontrar um número d tal que (d * e) % φ(n) = 1
 */
 
-/* EMSCRIPTEN_KEEPALIVE */
-long int privateKey_d(long int totient, long int exponent)
+EMSCRIPTEN_KEEPALIVE
+char *privateKey_d(const char *totient_str, const char *exponent_str)
 {
-    long int d = 1;
-    while ((d * exponent) % totient != 1)
+    mpz_t totient, exponent, d, temp;
+    mpz_inits(totient, exponent, d, temp, NULL);
+
+    mpz_set_str(totient, totient_str, 10);
+    mpz_set_str(exponent, exponent_str, 10);
+
+    mpz_set_ui(d, 1);
+
+    while (1)
     {
-        d++;
+        mpz_mul(temp, d, exponent);
+        mpz_mod(temp, temp, totient);
+
+        if (mpz_cmp_ui(temp, 1) == 0)
+        {
+            break;
+        }
+
+        mpz_add_ui(d, d, 1);
     }
 
-    return d;
+    char *result_str = mpz_get_str(NULL, 10, d);
+
+    mpz_clears(totient, exponent, d, temp, NULL);
+
+    return result_str;
 }
 
 // ======================= ENCRIPTAÇÃO DE MENSAGENS  ====================================
@@ -371,7 +547,7 @@ void RSA_encrypt(const char *message, const char *e_string, const char *n_string
     mpz_clears(msg, e, n, encrypted, NULL); // Liberamos a memória usada pelos números mpz_t
 }
 
-/* EMSCRIPTEN_KEEPALIVE */
+EMSCRIPTEN_KEEPALIVE
 char *cryptosia_encrypt(const char *message, const char *e_string, const char *n_string)
 {
     char *result = NULL;
@@ -404,7 +580,8 @@ void RSA_decrypt(const char *encrypted_message, const char *d_str, const char *n
     mpz_set_str(n, n_str, 10);
 
     size_t encrypted_len = strlen(encrypted_message); // Obtemos o tamanho da mensagem criptografada
-    *result = (char *)malloc(encrypted_len * 2);      // Alocamos memória para armazenar a mensagem descriptografada (2 é um tamanho aproximado)
+    size_t result_size = encrypted_len * 2;           // Alocamos memória para armazenar a mensagem descriptografada (2 é um tamanho inicial aproximado)
+    *result = (char *)malloc(result_size);
 
     if (*result == NULL)
     {
@@ -461,10 +638,19 @@ void RSA_decrypt(const char *encrypted_message, const char *d_str, const char *n
         current_position += strlen(decrypted_char); // Move o ponteiro de posição para o próximo espaço disponível
 
         // Devemos nos certificar de não ultrapassar o espaço alocado
-        if (current_position - *result >= (encrypted_len * 2))
+        if (current_position - *result + strlen(decrypted_char) >= result_size)
         {
-            fprintf(stderr, "Erro: Espaço alocado insuficiente.\n");
-            exit(1);
+            // Realloca mais memória (por exemplo, dobrando o tamanho atual)
+            result_size *= 2;
+            *result = (char *)realloc(*result, result_size);
+
+            if (*result == NULL)
+            {
+                fprintf(stderr, "Erro na alocação de memória.\n");
+                exit(1);
+            }
+
+            current_position = *result + strlen(*result); // Atualiza a posição
         }
 
         token = strtok(NULL, " "); // Passamos para o próximo token (número criptografado)
@@ -473,7 +659,7 @@ void RSA_decrypt(const char *encrypted_message, const char *d_str, const char *n
     mpz_clears(encrypted, d, n, decrypted, NULL); // Liberamos a memória usada pelos números mpz_t
 }
 
-/* EMSCRIPTEN_KEEPALIVE */
+EMSCRIPTEN_KEEPALIVE
 char *cryptosia_decrypt(const char *encrypted_message, const char *d_string, const char *n_string)
 {
     char *result = NULL;
@@ -511,11 +697,36 @@ char *cryptosia_decrypt(const char *encrypted_message, const char *d_string, con
 
 /* int main()
 {
-    const char *message = "A acentuação gráfica consiste na colocação de acento ortográfico para indicar a pronúncia de uma vogal ou marcar a sílaba tônica de uma palavra. Os nomes dos acentos gráficos da língua portuguesa são...";
+    const char *message = "Ouviram do Ipiranga as margens plácidas\nDe um povo heroico, o brado retumbante\nE o Sol da liberdade, em raios fúlgidos\nBrilhou no céu da pátria nesse instante\n\nSe o penhor dessa igualdade\nConseguimos conquistar com braço forte\nEm teu seio, ó liberdade\nDesafia o nosso peito a própria morte\n\nÓ Pátria amada\nIdolatrada\nSalve! Salve!\n\nBrasil, um sonho intenso, um raio vívido\nDe amor e de esperança, à terra desce\nSe em teu formoso céu, risonho e límpido\nA imagem do Cruzeiro resplandece\n\nGigante pela própria natureza\nÉs belo, és forte, impávido colosso\nE o teu futuro espelha essa grandeza\n\nTerra adorada\nEntre outras mil\nÉs tu, Brasil\nÓ Pátria amada!\nDos filhos deste solo, és mãe gentil\nPátria amada, Brasil!\n\nDeitado eternamente em berço esplêndido\nAo som do mar e à luz do céu profundo\nFulguras, ó Brasil, florão da América\nIluminado ao Sol do Novo Mundo!\n\nDo que a terra mais garrida\nTeus risonhos, lindos campos têm mais flores\nNossos bosques têm mais vida\nNossa vida, no teu seio, mais amores\n\nÓ Pátria amada\nIdolatrada\nSalve! Salve!\n\nBrasil, de amor eterno seja símbolo\nO lábaro que ostentas estrelado\nE diga o verde-louro dessa flâmula\nPaz no futuro e glória no passado\n\nMas se ergues da justiça a clava forte\nVerás que um filho teu não foge à luta\nNem teme, quem te adora, a própria morte\n\nTerra adorada\nEntre outras mil\nÉs tu, Brasil\nÓ Pátria amada!\nDos filhos deste solo, és mãe gentil\nPátria amada, Brasil!";
+    // printf("Mensagem Original: %s\n", message);
 
-    const char *e_str = "364822070128145";  // valor de e
-    const char *d_str = "558181515424889";  // valor de d
-    const char *n_str = "1502501358013949"; // valor de n
+    const char *p_str = "1033"; // valor de p
+    const char *q_str = "1423"; // valor de q
+    const char *e_str = "65537"; // valor de e
+
+    char *n_str = n_factor(p_str, q_str);
+    char *totient_str = publicKey_totient(p_str, q_str);
+
+    //char *e_str = publicKey_e(totient_str, 5);
+    //printf("Chave Pública: e = %s, n = %s\n", e_str, n_str);
+
+    char *d_str = privateKey_d(totient_str, e_str);
+
+    printf("Chave Pública: e = %s, n = %s\n", e_str, n_str);
+    printf("Chave Privada: d = %s, n = %s\n", d_str, n_str);
+
+    char *encrypted_result = NULL;
+    RSA_encrypt(message, e_str, n_str, &encrypted_result);
+    printf("Mensagem Criptografada: %s\n", encrypted_result);
+} */
+
+/* int main()
+{
+    const char *message = "Testando as coisas novamente e novamente!";
+
+    const char *e_str = "65537";   // valor de e
+    const char *d_str = "605681";  // valor de d
+    const char *n_str = "1469959"; // valor de n
 
     printf("Mensagem Original: %s\n", message);
 
