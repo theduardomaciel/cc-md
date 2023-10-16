@@ -13,7 +13,7 @@
 EMSCRIPTEN_KEEPALIVE
 char *mdc(const char *a_str, const char *b_str)
 {
-    // Inicializamos objetos GMP para os números a e b.
+    // Inicializamos objetos GMP para os números a e b fornecidos como strings.
     mpz_t a, b;
     mpz_inits(a, b, NULL);
 
@@ -134,6 +134,9 @@ char *verifications(const char *p_str, const char *q_str)
     int is_p_prime = isPrime(mpz_get_ui(p));
     int is_q_prime = isPrime(mpz_get_ui(q));
 
+    mpz_mul(p_times_q, p, q);
+
+    // Verificamos se há alguma inconsistência nos valores de p e q.
     if (mpz_cmp_ui(p_times_q, 256) < 0)
     {
         // O valor do produto de p e q é menor que 256, ou seja, a criptografia não é suficientemente segura
@@ -158,8 +161,8 @@ char *verifications(const char *p_str, const char *q_str)
     // Liberamos a memória dos objetos GMP.
     mpz_clears(p, q, p_times_q, NULL);
 
-    char *result_str = malloc(2);          // Alocamos espaço para um inteiro com até 2 dígitos
-    snprintf(result_str, 2, "%d", result); // Convertemos o resultado para uma string
+    char *result_str = malloc(3);          // Alocamos espaço para o inteiro de resposta
+    snprintf(result_str, 3, "%d", result); // Convertemos o resultado para uma string
 
     return result_str;
 }
@@ -176,7 +179,7 @@ char *n_factor(const char *p_str, const char *q_str)
     // Verificamos se há alguma inconsistência nos valores de p e q.
     char *verificationsResult = verifications(p_str, q_str);
 
-    if (verificationsResult[0] == '-')
+    if (verificationsResult[0] == '1')
     {
         // Inicializamos as variáveis GMP para p, q e n.
         mpz_t p, q, n;
@@ -230,7 +233,8 @@ char *publicKey_totient(const char *p_str, const char *q_str)
     // Verificamos se há alguma inconsistência nos valores de p e q.
     char *verificationsResult = verifications(p_str, q_str);
 
-    if (verificationsResult[0] == '-')
+    // Se não houver inconsistências, calculamos o totiente.
+    if (verificationsResult[0] == '1')
     {
         // Subtraímos 1 de p e q e multiplicamos os resultados.
         mpz_sub_ui(p, p, 1);
@@ -448,7 +452,7 @@ unsigned long long int modular_pow(unsigned long long int base, unsigned long lo
 }
  */
 
-void RSA_encrypt(const char *message, const char *e_string, const char *n_string, int limit_to_ascii, char **result)
+void RSA_encrypt(const char *message, const char *e_string, const char *n_string, int use_ascii, char **result)
 {
     mpz_t msg, e, n, encrypted;
     mpz_inits(msg, e, n, encrypted, NULL);
@@ -471,10 +475,11 @@ void RSA_encrypt(const char *message, const char *e_string, const char *n_string
     for (size_t i = 0; i < msg_len; i++)
     {
         // Para limitar os caracteres à tabela ASCII, utilizamos o seguinte
-        if (limit_to_ascii)
+        if (use_ascii)
         {
             // Traduzimos o valor do caractere em um inteiro obtendo o correspondente do caractere em numeral ASCII
             long int ascii_value = (long int)(message[i]);
+            printf("Caractere: %c, Valor ASCII: %ld\n", message[i], ascii_value);
 
             // Alteramos o valor de "current_char" (em mpz_t) para o valor do caractere em numeral ASCII
             mpz_set_ui(msg, ascii_value);
@@ -482,7 +487,9 @@ void RSA_encrypt(const char *message, const char *e_string, const char *n_string
         else
         {
             unsigned char current_char = (unsigned char)(message[i]); // Obtemos o caractere atual
-            mpz_set_ui(msg, current_char);                            // Configuramos o número mpz_t com o valor numérico do caractere
+            printf("Caractere: %c, Valor numérico: %d\n", message[i], current_char);
+
+            mpz_set_ui(msg, current_char); // Configuramos o número mpz_t com o valor numérico do caractere
         }
 
         // ========
@@ -543,14 +550,14 @@ void RSA_encrypt(const char *message, const char *e_string, const char *n_string
 }
 
 EMSCRIPTEN_KEEPALIVE
-char *cryptosia_encrypt(const char *message, const char *e_string, const char *n_string, int limit_to_ascii)
+char *cryptosia_encrypt(const char *message, const char *e_string, const char *n_string, int use_ascii)
 {
     char *result = NULL;
 
     printf("Mensagem Original: %s\n", message);
     printf("Chave Pública: e = %s, n = %s\n", e_string, n_string);
 
-    RSA_encrypt(message, e_string, n_string, limit_to_ascii, &result);
+    RSA_encrypt(message, e_string, n_string, use_ascii, &result);
 
     printf("Mensagem Criptografada: %s\n", result);
 
@@ -630,6 +637,8 @@ void RSA_decrypt(const char *encrypted_message, const char *d_str, const char *n
         char decrypted_char[2] = {(char)ascii_value, '\0'}; // Convertemos o valor ASCII de volta para caractere
         strcat(current_position, decrypted_char);           // Concatenamos o caractere à string de resultado
 
+        printf("Caractere: %c, Valor ASCII: %lld\n", decrypted_char[0], ascii_value);
+
         current_position += strlen(decrypted_char); // Move o ponteiro de posição para o próximo espaço disponível
 
         // Devemos nos certificar de não ultrapassar o espaço alocado
@@ -685,73 +694,19 @@ char *cryptosia_decrypt(const char *encrypted_message, const char *d_string, con
     const char *n_str = "1502501358013949";// valor de n
 
     CHAVES MENORES:
-    const char *e_str = "65537";
     const char *d_str = "44273";
     const char *n_str = "49163";
 */
 
 /*
-// TESTE 3
-int main()
-{
-    const char *message = "Testando as coisas com vários sinais estranhões, e pífios novamente!";
 
-    const char *e_str = "65537";   // valor de e
-    const char *d_str = "605681";  // valor de d
-    const char *n_str = "1469959"; // valor de n
-
-    printf("Mensagem Original: %s\n", message);
-
-    char *encrypted_result = NULL;
-    RSA_encrypt(message, e_str, n_str, 0, &encrypted_result);
-    printf("Mensagem Criptografada: %s\n", encrypted_result);
-
-    char *decrypted_result = NULL;
-    RSA_decrypt(encrypted_result, d_str, n_str, &decrypted_result);
-    printf("Mensagem Descriptografada: %s\n", decrypted_result);
-
-    free(encrypted_result); // Liberar memória alocada
-    free(decrypted_result); // Liberar memória alocada
-
-    return 0;
-} */
-
-/*
-// TESTE 2
-int main()
-{
-    const char *message = "Ouviram do Ipiranga as margens plácidas\nDe um povo heroico, o brado retumbante\nE o Sol da liberdade, em raios fúlgidos\nBrilhou no céu da pátria nesse instante\n\nSe o penhor dessa igualdade\nConseguimos conquistar com braço forte\nEm teu seio, ó liberdade\nDesafia o nosso peito a própria morte\n\nÓ Pátria amada\nIdolatrada\nSalve! Salve!\n\nBrasil, um sonho intenso, um raio vívido\nDe amor e de esperança, à terra desce\nSe em teu formoso céu, risonho e límpido\nA imagem do Cruzeiro resplandece\n\nGigante pela própria natureza\nÉs belo, és forte, impávido colosso\nE o teu futuro espelha essa grandeza\n\nTerra adorada\nEntre outras mil\nÉs tu, Brasil\nÓ Pátria amada!\nDos filhos deste solo, és mãe gentil\nPátria amada, Brasil!\n\nDeitado eternamente em berço esplêndido\nAo som do mar e à luz do céu profundo\nFulguras, ó Brasil, florão da América\nIluminado ao Sol do Novo Mundo!\n\nDo que a terra mais garrida\nTeus risonhos, lindos campos têm mais flores\nNossos bosques têm mais vida\nNossa vida, no teu seio, mais amores\n\nÓ Pátria amada\nIdolatrada\nSalve! Salve!\n\nBrasil, de amor eterno seja símbolo\nO lábaro que ostentas estrelado\nE diga o verde-louro dessa flâmula\nPaz no futuro e glória no passado\n\nMas se ergues da justiça a clava forte\nVerás que um filho teu não foge à luta\nNem teme, quem te adora, a própria morte\n\nTerra adorada\nEntre outras mil\nÉs tu, Brasil\nÓ Pátria amada!\nDos filhos deste solo, és mãe gentil\nPátria amada, Brasil!";
-    // printf("Mensagem Original: %s\n", message);
-
-    const char *p_str = "1033"; // valor de p
-    const char *q_str = "1423"; // valor de q
-    // const char *e_str = "65537"; // valor de e
-
-    char *n_str = n_factor(p_str, q_str);
-    char *totient_str = publicKey_totient(p_str, q_str);
-
-    char *e_str = publicKey_e(totient_str, 5);
-    printf("Chave Pública: e = %s, n = %s\n", e_str, n_str);
-
-    char *d_str = privateKey_d(totient_str, e_str);
-
-    printf("Chave Pública: e = %s, n = %s\n", e_str, n_str);
-    printf("Chave Privada: d = %s, n = %s\n", d_str, n_str);
-
-    char *encrypted_result = NULL;
-    RSA_encrypt(message, e_str, n_str, &encrypted_result);
-    printf("Mensagem Criptografada: %s\n", encrypted_result);
-} */
-
-/*
-// TESTE 1
 int main()
 {
     const char *message = "Testando as coisas novamente e novamente!";
 
-    const char *e_str = "65537";   // valor de e
-    const char *d_str = "605681";  // valor de d
-    const char *n_str = "1469959"; // valor de n
+    const char *e_str = "17";   // valor de e
+    const char *d_str = "34829089";  // valor de d
+    const char *n_str = "148047973"; // valor de n
 
     printf("Mensagem Original: %s\n", message);
 
@@ -767,4 +722,6 @@ int main()
     free(decrypted_result); // Liberar memória alocada
 
     return 0;
-} */
+}
+
+*/
