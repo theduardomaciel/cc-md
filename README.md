@@ -1,4 +1,4 @@
-# códigos
+# Matemática Discreta
 
 Repositório contendo todos os arquivos fonte em C desenvolvidos durante a matéria Matemática Discreta (MD) do curso de Graduação em Ciência da Computação (CC) na Universidade Federal de Alagoas (UFAL).
 
